@@ -16,6 +16,10 @@ if ! need ffmpeg; then
   apt-get update -qq && apt-get install -y -qq ffmpeg
 fi
 echo "[setup] $(ffmpeg -version | head -1)"
+for enc in libx264 aac; do
+  ffmpeg -hide_banner -encoders 2>/dev/null | grep -q " $enc " || echo "[setup] AVISO: FFmpeg sem o codificador $enc"
+done
+ffmpeg -hide_banner -filters 2>/dev/null | grep -q " loudnorm " || echo "[setup] AVISO: FFmpeg sem o filtro loudnorm"
 
 # Dependências do projeto (three, playwright). O Playwright usa o Chromium
 # pré-instalado em /opt/pw-browsers/chromium, então não baixa navegador.
@@ -31,4 +35,4 @@ if [ -x "$CHROMIUM" ]; then
 else
   echo "[setup] AVISO: Chromium não encontrado em $CHROMIUM (rode: npx playwright install --with-deps chromium)"
 fi
-echo "[setup] pronto. Verifique com: npm run check"
+echo "[setup] pronto. Verifique com: npm run test:tools"

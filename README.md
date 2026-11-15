@@ -1176,3 +1176,11 @@ Ferramentas: Node.js, Three.js, FFmpeg e Playwright com o Chromium em `/opt/pw-b
 
 Ao abrir o navegador com Playwright, use `chromium.launch({ executablePath: '/opt/pw-browsers/chromium' })`.
 - Mapa de conectores (o que usar em cada etapa): `docs/conectores.md`
+
+### Pipeline (`pipeline/`)
+- `config.mjs`: caminho do Chromium, opções do modo headless (WebGL por software) e padrões de vídeo e áudio.
+- `browser.mjs`: `launchBrowser()`, Playwright controlando o Chromium em modo headless.
+- `server.mjs`: servidor local com import map do `three` e de `three/addons/` (GLTFLoader etc.).
+- `render.mjs`: `renderFrames(código da cena, { outDir, seconds, fps })` renderiza uma cena Three.js quadro a quadro.
+- `ffmpeg.mjs`: `framesToMp4`, `normalizeAudio`, `mixAudio`, `muxVideoAudio` e `probe`.
+- `npm run test:tools`: testa cada ferramenta separadamente e depois o pipeline completo (10 testes).

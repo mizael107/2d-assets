@@ -4,7 +4,8 @@
   "type": "module",
   "scripts": {
     "setup": "bash scripts/setup.sh",
-    "check": "node scripts/check-env.mjs"
+    "check": "node scripts/check-env.mjs",
+    "test:tools": "node scripts/test-tools.mjs"
   },
   "dependencies": {
     "playwright": "^1.65.1",
