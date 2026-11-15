@@ -22,9 +22,10 @@ export const PRESETS = {
 export async function renderScene({
   entry, outDir, seconds, fps = 30, width = 540, height = 960, params = {},
   format = 'jpeg', quality = 0.92, startFrame = 0, endFrame, onProgress, keepBrowser,
+  preroll = 0, keepFrames = false, // preroll: segundos simulados antes de startFrame (estado da câmera que acompanha)
 }) {
   const framesDir = join(outDir, 'frames');
-  await rm(framesDir, { recursive: true, force: true });
+  if (!keepFrames) await rm(framesDir, { recursive: true, force: true });
   await mkdir(framesDir, { recursive: true });
   const { server, url } = await startServer({ '/': studioPage({ entry, width, height, fps, params }), '/favicon.ico': '' });
   const browser = keepBrowser || await launchStudioBrowser();
@@ -47,6 +48,7 @@ export async function renderScene({
     const mime = format === 'png' ? 'image/png' : 'image/jpeg';
     const ext = format === 'png' ? 'png' : 'jpg';
     const probes = [];
+    for (let i = Math.max(0, startFrame - Math.round(preroll * fps)); i < startFrame; i++) await page.evaluate((t) => window.__studio.advance(t), i / fps);
     for (let i = startFrame; i < last; i++) {
       const r = await page.evaluate(([t, m, q]) => window.__studio.renderAt(t, m, q), [i / fps, mime, quality]);
       await writeFile(join(framesDir, `f${String(i).padStart(5, '0')}.${ext}`), Buffer.from(r.img.split(',')[1], 'base64'));
@@ -57,7 +59,7 @@ export async function renderScene({
     const result = {
       entry, width, height, fps, seconds: dur, frames: last - startFrame, format: ext,
       pattern: join(framesDir, `f%05d.${ext}`), framesDir,
-      cues: meta.cues, info: { ...meta.info, ...info }, probes, errors,
+      cues: meta.cues, captions: meta.captions, info: { ...meta.info, ...info }, probes, errors, startFrame, endFrame: last,
       renderSeconds: (Date.now() - t0) / 1000,
     };
     await writeFile(join(outDir, 'meta.json'), JSON.stringify(result, null, 1));

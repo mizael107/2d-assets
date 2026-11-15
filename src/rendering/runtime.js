@@ -11,9 +11,11 @@
 //       duration?,                     // segundos
 //       cues?,                         // [{ t, sound, gain?, kind? }] eventos de áudio
 //       probes?(t),                    // dados medidos por quadro para a autocorreção
+//       captions?, captionStyle?,      // legendas (src/effects/captions.js) desenhadas por cima
 //     };
 //   }
 import * as THREE from 'three';
+import { drawCaptions } from '../effects/captions.js';
 
 export async function startStudio(createScene, { width, height, fps, params, debug }) {
   const renderer = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true, powerPreference: 'high-performance' });
@@ -35,14 +37,22 @@ export async function startStudio(createScene, { width, height, fps, params, deb
   let stats = null;
   if (debug && window.Stats) { stats = new window.Stats(); document.body.appendChild(stats.dom); }
 
+  // Camada 2D por cima do 3D (legendas, títulos): o quadro é composto num canvas 2D.
+  const captions = sc.captions ?? params?.captions ?? null;
+  const comp = captions ? Object.assign(document.createElement('canvas'), { width, height }) : null;
+  const cctx = comp?.getContext('2d');
   window.__studio = {
-    meta: () => ({ duration: sc.duration ?? null, cues: sc.cues ?? [], info: sc.info ?? {} }),
+    meta: () => ({ duration: sc.duration ?? null, cues: sc.cues ?? [], info: sc.info ?? {}, captions }),
+    // Só atualiza o estado (sem desenhar): usado na pré-rolagem do render em blocos.
+    advance(t) { sc.update(t, 1 / fps); },
     renderAt(t, format = 'image/jpeg', quality = 0.92) {
       stats?.begin();
       sc.update(t, 1 / fps);
       if (sc.render) sc.render(1 / fps); else renderer.render(sc.scene, sc.camera);
       stats?.end();
-      return { img: renderer.domElement.toDataURL(format, quality), probes: sc.probes ? sc.probes(t) : null };
+      let out = renderer.domElement; let caption = null;
+      if (cctx) { cctx.drawImage(renderer.domElement, 0, 0); caption = drawCaptions(cctx, captions, t, { width, height, style: sc.captionStyle ?? params?.captionStyle }); out = comp; }
+      return { img: out.toDataURL(format, quality), probes: { ...(sc.probes ? sc.probes(t) : {}), ...(caption ? { legenda: caption } : {}) } };
     },
     info: () => ({ calls: renderer.info.render.calls, triangles: renderer.info.render.triangles, gl: renderer.getContext().getParameter(renderer.getContext().VERSION) }),
   };

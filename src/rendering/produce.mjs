@@ -3,6 +3,7 @@
 import { mkdir, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { renderScene } from './render-scene.mjs';
+import { renderSceneParallel } from './render-parallel.mjs';
 import { framesToMp4, muxVideoAudio } from '../../pipeline/ffmpeg.mjs';
 import { mixScene } from '../audio/mix.mjs';
 import { ROOT } from '../../pipeline/config.mjs';
@@ -10,10 +11,11 @@ import { parseRenderSpec, parseCues } from '../validation/schemas.mjs';
 import { checkVideoFile, checkFrames, checkProbes, checkAudioSync, checkLoudness, contactSheet, summarize } from '../validation/checks.mjs';
 
 // soundMap: nome do som -> arquivo (relativo à raiz).
-export async function produce({ spec, outDir, soundMap = {}, beds = [], narration = null, audioOffset = 0, rules = {}, onProgress }) {
+// workers > 1: render em blocos paralelos (src/rendering/render-parallel.mjs).
+export async function produce({ spec, outDir, soundMap = {}, beds = [], narration = null, audioOffset = 0, rules = {}, onProgress, workers = 1, preroll = 2 }) {
   const S = parseRenderSpec(spec);
   await mkdir(outDir, { recursive: true });
-  const r = await renderScene({ ...S, outDir, onProgress });
+  const r = workers > 1 ? await renderSceneParallel({ ...S, outDir, workers, preroll }) : await renderScene({ ...S, outDir, onProgress });
   const cues = parseCues(r.cues);
   const silent = join(outDir, 'video-sem-audio.mp4');
   framesToMp4(r.pattern, silent, { fps: S.fps, crf: 20, preset: 'veryfast' });
@@ -34,6 +36,7 @@ export async function produce({ spec, outDir, soundMap = {}, beds = [], narratio
   };
   const summary = summarize(Object.values(sections));
   const report = { spec: S, final, contactSheet: sheet.out, renderSeconds: r.renderSeconds, frames: r.frames, cues, summary, sections: { ...sections, frames: { frames: sections.frames.frames, issues: sections.frames.issues } } };
+  if (r.captions?.length) { const { toSRT } = await import('../effects/captions.js'); await writeFile(join(outDir, 'legendas.srt'), toSRT(r.captions)); report.legendas = join(outDir, 'legendas.srt'); }
   await writeFile(join(outDir, 'relatorio.json'), JSON.stringify(report, null, 1));
   return report;
 }

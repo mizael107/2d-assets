@@ -2,7 +2,7 @@
 
 Executar: `npm run test:studio` (todos) ou `npm run test:studio -- A J` (só alguns). Saídas em `output/testes/<letra>/` e `output/testes/resultados.json`.
 
-## Resultado da última execução: 10/10 aprovados
+## Resultado da última execução: 12/12 aprovados
 
 | Teste | O que verifica | Resultado medido |
 |---|---|---|
@@ -15,6 +15,8 @@ Executar: `npm run test:studio` (todos) ou `npm run test:studio -- A J` (só alg
 | **G** Áudio | Reprodução, síntese, filtros, mixagem | 10 sons Tone.js; Howler: load → play → end (1,2 s); voz-guia de 4,98 s; mixagem em −14,4 LUFS, pico −1,0 dBTP; sincronia de 0 ms |
 | **H** Playwright | Chromium executa cena e ferramentas | Chromium 153 headless; lil-gui e stats.js ativos; render em **1080×1920**; MediaPipe: WASM servido e compilado |
 | **I** FFmpeg | MP4 com imagem e áudio | H.264 + AAC, 3,0 s, 540×960 |
+| **K** Legendas | Estilo vídeo curto + sincronia com a voz | blocos "O guri parou." / "Algo caiu" / "do céu." / "E agora?"; 1ª legenda em 0,6 s (início da voz); palavra-chave amarela detectada; `.srt` gerado; vídeo aprovado (render em 4 blocos) |
+| **L** Render paralelo | 4 blocos = render contínuo | 180 quadros; **0% de diferença** em 11 quadros, incluindo todas as emendas; 72,3 s → 64,5 s (1,12×) |
 | **J** Integração | Cena completa | MP4 6 s, 540×960, 30 fps, vídeo + áudio; impacto calculado pela física (2,858 s); passos −10 ms, impacto 0 ms, whoosh 0 ms; −14,6 LUFS; render em ~62 s; 0 erros nas verificações |
 
 Também aprovados: a base anterior (`npm run test:tools`, 10/10; `npm run check`, 7 OK) e a demonstração de autocorreção (`npm run demo:autocorrecao`, aprovada na 2ª iteração; ver [AUTOCORRECAO.md](AUTOCORRECAO.md)).
@@ -32,6 +34,9 @@ Na primeira execução, 6/10 passaram. As falhas foram:
 | J | Loudness −15,7 (normalização de uma passada) | Problema real | Duas passadas |
 | J | Caixa fora do quadro e depois arremessada | Problema real | Ponto de queda, restituição 0, CCD |
 | J | Cena não iniciava (comentário quebrou a sintaxe) | Erro meu | Corrigido; o renderizador agora mostra o erro real |
+
+## Regressão encontrada depois (e corrigida)
+Ao integrar o Roblox, a demo da cidade começava com a câmera na posição padrão: a timeline do GSAP já estava em t = 0 e `seek(0)` não reaplicava o corte inicial. A primeira correção (forçar o render em t = 0) quebrou o teste C, porque o dolly aparecia concluído logo no quadro 0; a suíte de regressão pegou isso. A correção final posiciona sempre em `max(t, 1 µs)`. B, C, J e a cidade passam.
 
 ## Dependências externas pendentes (não testadas por falta de arquivo)
 - **Modelo VRM:** nenhum `.vrm` em `assets/characters/`. O plugin está ativo, mas o carregamento real não foi testado.

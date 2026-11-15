@@ -114,9 +114,10 @@ export function createCameraDirector(camera, { defaultEase = 'power2.inOut' } = 
     shake(at, duration, { amp = 0.05, freq = 22 } = {}) { shake.push({ start: at, end: at + duration, amp, freq }); return api; },
 
     update(t, dt = 1 / 30) {
-      // render forçado: seek() não reprocessa se a timeline já estiver em t (ex.: t = 0 logo
-      // após a montagem), e a câmera ficaria na posição padrão.
-      tl.seek(t, false); tl.render(t, false, true);
+      // Nunca posicionar exatamente em 0: se a timeline já estiver em 0 (ex.: logo após a
+      // montagem), seek(0) não reprocessa nada e a câmera fica na posição padrão. Com 1 µs
+      // ela sempre anda e aplica os cortes do instante 0 (render forçado em 0 adiantava as tweens).
+      tl.seek(Math.max(t, 1e-6), false);
       let pos = new THREE.Vector3(s.px, s.py, s.pz);
       let look = new THREE.Vector3(s.tx, s.ty, s.tz);
       for (const f of follows) {

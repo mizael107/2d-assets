@@ -15,6 +15,9 @@ import { mixScene, processSound } from '../src/audio/mix.mjs';
 import { guideVoice } from '../src/audio/voice.mjs';
 import { envelope, onsets, loudnessStats } from '../src/audio/analyze.mjs';
 import { checkFrames, checkProbes, checkAudioSync, contactSheet, diffImages } from '../src/validation/checks.mjs';
+import { chunkCaptions } from '../src/effects/captions.js';
+import { renderSceneParallel } from '../src/rendering/render-parallel.mjs';
+import sharp from 'sharp';
 
 const OUT = join(ROOT, 'output/testes'); await mkdir(OUT, { recursive: true });
 const only = process.argv.slice(2).map((s) => s.toUpperCase());
@@ -178,6 +181,40 @@ await test('J', 'Integração: cena animada com câmera, efeitos e áudio', asyn
   ok(rep.cues.some((c) => c.sound === 'impacto'), 'impacto vem da física (tempo calculado pelo Rapier)', rep.cues.find((c) => c.sound === 'impacto'));
   ok(rep.sections.loudness.lufs !== null && near(rep.sections.loudness.lufs, -14, 1.5), 'loudness final', rep.sections.loudness.lufs);
   ok(true, 'tempo de render (s)', rep.renderSeconds);
+});
+
+await test('K', 'Legendas: estilo vídeo curto, sincronizadas com a narração', async (ok, dir) => {
+  await mkdir(dir, { recursive: true });
+  const voz = guideVoice('O guri parou. Algo caiu do céu. E agora?', join(dir, 'narracao.wav'));
+  const dur = Number(probe(voz).format.duration); const at = 0.6;
+  const caps = chunkCaptions('O guri *parou*. Algo *caiu* do céu. E *agora*?', at, at + dur, { maxWords: 3 });
+  ok(caps.length >= 4 && caps.every((c) => c.words.length <= 3), 'texto dividido em blocos de até 3 palavras', caps.map((c) => c.words.map((w) => w.w).join(' ')));
+  const env = [...Array(Math.round(at * 30)).fill(0), ...envelope(voz, 30)];
+  const rep = await produce({ spec: { entry: '/scenes/tests/j-integracao.js', seconds: 6, fps: 30, width: 540, height: 960, params: { envelope: env, captions: caps } }, outDir: dir,
+    soundMap: { passo: 'assets/sounds/footsteps/proc-passo.wav', impacto: 'assets/sounds/impacts/proc-impacto.wav', whoosh: 'assets/sounds/impacts/proc-whoosh.wav' },
+    narration: { file: voz.replace(ROOT + '/', ''), at, gain: 1.1 }, workers: 4 });
+  const meta = JSON.parse(await readFile(join(dir, 'meta.json'), 'utf8'));
+  const shown = meta.probes.filter((p) => p.legenda); const first = shown[0];
+  ok(first && Math.abs(first.t - at) <= 1 / 30 + 1e-6, 'primeira legenda aparece junto com a voz', first && { t: first.t, legenda: first.legenda });
+  ok(meta.probes.filter((p) => p.t < at - 0.01).every((p) => !p.legenda), 'nenhuma legenda antes da fala');
+  const key = caps.find((c) => c.words.some((w) => w.key)); const kf = Math.round(((key.t0 + key.t1) / 2) * 30);
+  const img = await sharp(join(meta.framesDir, `f${String(kf).padStart(5, '0')}.jpg`)).extract({ left: 0, top: Math.round(960 * 0.6), width: 540, height: Math.round(960 * 0.24) }).raw().toBuffer();
+  let yellow = 0; for (let i = 0; i < img.length; i += 3) if (img[i] > 200 && img[i + 1] > 150 && img[i + 1] < 210 && img[i + 2] < 110) yellow++;
+  ok(yellow > 300, 'palavra-chave em amarelo no terço inferior (pixels)', yellow);
+  ok(rep.legendas && (await readFile(rep.legendas, 'utf8')).includes('-->'), 'arquivo .srt gerado', rep.legendas);
+  ok(rep.summary.ok, 'vídeo final aprovado nas verificações', rep.summary.errors.map((e) => e.message));
+  await copyFile(join(meta.framesDir, `f${String(kf).padStart(5, '0')}.jpg`), join(dir, 'quadro-legenda.jpg'));
+});
+
+await test('L', 'Render em blocos paralelos = render contínuo', async (ok, dir) => {
+  const base = { entry: '/scenes/tests/j-integracao.js', seconds: 6, fps: 30, width: 540, height: 960, format: 'png' };
+  const seq = await renderScene({ ...base, outDir: join(dir, 'continuo') });
+  const par = await renderSceneParallel({ ...base, outDir: join(dir, 'paralelo'), workers: 4, preroll: 2 });
+  ok(par.frames === seq.frames && par.errors.length === 0, 'mesma quantidade de quadros, sem erros', { continuo: seq.frames, paralelo: par.frames, blocos: par.blocos });
+  const sample = [0, 44, 45, 46, 89, 90, 91, 134, 135, 136, 179];
+  const diffs = []; for (const f of sample) { const n = `f${String(f).padStart(5, '0')}.png`; diffs.push((await diffImages(join(seq.framesDir, n), join(par.framesDir, n))).changedPercent); }
+  ok(Math.max(...diffs) < 0.5, 'quadros idênticos, inclusive nas emendas dos blocos (% pixels diferentes)', Object.fromEntries(sample.map((f, i) => [f, diffs[i]])));
+  ok(true, 'tempo contínuo × paralelo (s)', { continuo: seq.renderSeconds, paralelo: par.renderSeconds, ganho: +(seq.renderSeconds / par.renderSeconds).toFixed(2) });
 });
 
 await writeFile(join(OUT, 'resultados.json'), JSON.stringify({ data: new Date().toISOString(), results, dependencias: deps }, null, 1));

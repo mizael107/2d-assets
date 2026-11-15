@@ -27,19 +27,20 @@ assets/                    biblioteca reutilizável (arquivos)
   sounds/                  footsteps, impacts, weather, ambience, animals, music, voices
                            (proc-*.wav = gerados pelo Tone.js; ver sounds/LICENCAS.md)
 src/                       biblioteca de código
-  rendering/  page.mjs (página + import map), runtime.js (navegador), render-scene.mjs,
+  rendering/  page.mjs (página + import map), runtime.js (navegador), render-scene.mjs, render-parallel.mjs,
               produce.mjs (render→áudio→MP4→verificações), probes.js
   animation/  timeline.js (GSAP), motions.js (andar, correr, pular, cair, acenar, pânico, feitiço)
   characters/ humanoid.js (personagem com esqueleto), face.js (piscar, expressões, boca),
               loader.js (GLB/VRM/FBX Mixamo + retarget)
   cameras/    director.js (movimentos cinematográficos), preview.js (camera-controls)
   physics/    world.js (Rapier, bake + impactos), bvh.js (three-mesh-bvh)
-  effects/    postfx.js (bloom, DoF, vinheta, grão, tone mapping), particles.js
+  effects/    postfx.js (bloom, DoF, vinheta, grão, tone mapping), particles.js, captions.js (legendas)
   environments/ environment.js (chão, céu, névoa, árvores), lighting.js (presets)
   audio/      synth.js (Tone.js), procedural.mjs, mix.mjs (FFmpeg), analyze.mjs,
               voice.mjs (voz-guia espeak-ng), preview.js (Howler)
   validation/ schemas.mjs (zod), checks.mjs (verificações), autocorrect.mjs
   utils/      random.js (semente), math.js, browser-task.mjs
+  roblox/     import-rbx.mjs, to-three.js, materials.js, blocky-kit.js, assets.js, catalog.mjs (ver ROBLOX_INTEGRACAO.md)
 scenes/
   tests/      cenas dos testes A–J e tasks.js (checagens no navegador)
   demo/       cena + configuração da demonstração de autocorreção
@@ -85,7 +86,8 @@ await produce({
 | Comando | O que faz |
 |---|---|
 | `npm run setup` | Prepara o ambiente (só instala o que falta) |
-| `npm run test:studio` | Testes A–J (10 testes, ~2,5 min) |
+| `npm run test:studio` | Testes A–L (12 testes, ~7 min) |
+| `npm run test:roblox` | Testes da integração Roblox (R1–R5) |
 | `npm run demo:autocorrecao` | Demonstração do ciclo de autocorreção |
 | `npm run sounds` | Gera de novo a biblioteca de sons procedurais |
 | `npm run test:tools` / `npm run check` | Testes da base anterior (continuam válidos) |

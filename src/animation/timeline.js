@@ -13,8 +13,8 @@ export function createTimeline() {
     fromTo: (target, from, to, at = 0) => tl.fromTo(target, from, { ...to }, at),
     set: (target, vars, at = 0) => tl.set(target, vars, at),
     call: (fn, at) => tl.call(fn, [], at),
-    // render forçado: seek() sozinho não reprocessa se a timeline já estiver em t.
-    seek: (t) => { tl.seek(t, false); tl.render(t, false, true); },
+    // Nunca exatamente 0: seek(0) numa timeline que já está em 0 não aplica nada.
+    seek: (t) => tl.seek(Math.max(t, 1e-6), false),
     duration: () => tl.duration(),
   };
 }
