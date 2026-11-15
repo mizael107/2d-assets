@@ -23,9 +23,15 @@ for enc in libx264 aac; do
 done
 grep -q " loudnorm " <<<"$FILTERS" && echo "[setup] FFmpeg: filtro loudnorm OK" || echo "[setup] AVISO: FFmpeg sem o filtro loudnorm"
 
+# Voz-guia offline (pt-BR) para animatics e testes de sincronização labial.
+if ! need espeak-ng; then
+  echo "[setup] espeak-ng ausente: instalando via apt"
+  apt-get update -qq && apt-get install -y -qq espeak-ng
+fi
+
 # Dependências do projeto (three, playwright). O Playwright usa o Chromium
 # pré-instalado em /opt/pw-browsers/chromium, então não baixa navegador.
-if [ -d node_modules/three ] && [ -d node_modules/playwright ]; then
+if [ -d node_modules/three ] && [ -d node_modules/playwright ] && [ -d node_modules/gsap ] && [ -d node_modules/postprocessing ]; then
   echo "[setup] node_modules já presente"
 else
   npm ci --no-audit --no-fund

@@ -1184,3 +1184,12 @@ Ao abrir o navegador com Playwright, use `chromium.launch({ executablePath: '/op
 - `render.mjs`: `renderFrames(código da cena, { outDir, seconds, fps })` renderiza uma cena Three.js quadro a quadro.
 - `ffmpeg.mjs`: `framesToMp4`, `normalizeAudio`, `mixAudio`, `muxVideoAudio` e `probe`.
 - `npm run test:tools`: testa cada ferramenta separadamente e depois o pipeline completo (10 testes).
+
+## Estúdio de animação
+
+O projeto agora é um estúdio de produção de animações 3D por código: personagens com esqueleto, movimentos, câmera cinematográfica, física, partículas, pós-processamento, áudio, render em MP4 9:16 e autocorreção.
+
+- Comece por `docs/ARQUITETURA_DO_ESTUDIO.md`.
+- `npm run test:studio`: testes A–J.
+- `npm run demo:autocorrecao`: demonstração do ciclo de autocorreção.
+- Documentação completa em `docs/`.
