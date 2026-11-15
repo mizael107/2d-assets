@@ -16,10 +16,12 @@ if ! need ffmpeg; then
   apt-get update -qq && apt-get install -y -qq ffmpeg
 fi
 echo "[setup] $(ffmpeg -version | head -1)"
+ENCODERS="$(ffmpeg -hide_banner -encoders 2>/dev/null)"
+FILTERS="$(ffmpeg -hide_banner -filters 2>/dev/null)"
 for enc in libx264 aac; do
-  ffmpeg -hide_banner -encoders 2>/dev/null | grep -q " $enc " || echo "[setup] AVISO: FFmpeg sem o codificador $enc"
+  grep -q " $enc " <<<"$ENCODERS" && echo "[setup] FFmpeg: codificador $enc OK" || echo "[setup] AVISO: FFmpeg sem o codificador $enc"
 done
-ffmpeg -hide_banner -filters 2>/dev/null | grep -q " loudnorm " || echo "[setup] AVISO: FFmpeg sem o filtro loudnorm"
+grep -q " loudnorm " <<<"$FILTERS" && echo "[setup] FFmpeg: filtro loudnorm OK" || echo "[setup] AVISO: FFmpeg sem o filtro loudnorm"
 
 # Dependências do projeto (three, playwright). O Playwright usa o Chromium
 # pré-instalado em /opt/pw-browsers/chromium, então não baixa navegador.
