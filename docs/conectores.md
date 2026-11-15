@@ -27,7 +27,7 @@ A montagem final roda sempre no próprio ambiente (Three.js + Chromium/Playwrigh
 ## 3. Personagens, esqueleto e animação
 | Conector | Papel |
 |---|---|
-| **Ludo AI** (principal) | Personagem a partir de imagem, esqueleto, animações prontas ou por texto, sprites direcionais |
+| **Ludo AI** (principal; requer chave de API) | Personagem a partir de imagem, esqueleto, animações prontas ou por texto, sprites direcionais |
 | Hyper3D Rodin | Esqueleto e animação de modelos Rodin |
 | three.ws 3D Studio | Avatar com esqueleto a partir de texto ou imagem, refinamento por instrução |
 | 3D Valley | Animar personagem que já tem esqueleto |
@@ -80,3 +80,9 @@ A montagem final roda sempre no próprio ambiente (Three.js + Chromium/Playwrigh
 - Baixar os arquivos gerados assim que ficarem prontos: links de Ludo (7 dias) e Blipsmith (24 h) expiram.
 - O ambiente bloqueia downloads por padrão. Liberar o domínio de cada serviço quando ele for usado pela primeira vez.
 - Registrar créditos e licenças dos assets usados (ex.: 3D Valley, Sonoro) no projeto.
+
+## Status do teste (2026-11-15)
+- **Funcionando com saldo:** TO3D (US$ 0,40), 3D AI Studio (4 créditos), PINOC (60 créditos gratuitos), SFX Engine (9 créditos), Blipsmith (10 créditos), Audo (0 créditos, mas com usos gratuitos diários).
+- **Funcionando sem saldo** (só bibliotecas e consultas gratuitas): 3D Valley, Nodaro, Nixly, fal.ai (conta bloqueada por falta de créditos).
+- **Funcionando (gratuitos ou só leitura):** Hyper3D Rodin, CGAxis, 3DAssets.dev, three.ws, GripForge, Physics MCP, Sons, Sonoro, Google Drive, Canva, Adobe, Miro, Stewdio, Lovable, Macaly, Hive, Microsoft Learn, Claude Academy.
+- **Com erro:** Ludo AI (falta chave de API), ElevenLabs (reconectar com mais permissões), Transcrição (conta não conectada), Context7 (cota mensal esgotada; criar chave gratuita), MotionSmith (sem assinatura).
