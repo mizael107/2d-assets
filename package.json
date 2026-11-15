@@ -1,4 +1,11 @@
 {
+  "name": "2d-assets",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "setup": "bash scripts/setup.sh",
+    "check": "node scripts/check-env.mjs"
+  },
   "dependencies": {
     "playwright": "^1.65.1",
     "three": "^0.187.0"
