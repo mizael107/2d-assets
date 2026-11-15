@@ -1175,3 +1175,4 @@ Ferramentas: Node.js, Three.js, FFmpeg e Playwright com o Chromium em `/opt/pw-b
 - `npm run check`: testa cada ferramenta e o pipeline completo: renderiza quadros Three.js/WebGL no Chromium e monta um MP4 de teste com FFmpeg.
 
 Ao abrir o navegador com Playwright, use `chromium.launch({ executablePath: '/opt/pw-browsers/chromium' })`.
+- Mapa de conectores (o que usar em cada etapa): `docs/conectores.md`
