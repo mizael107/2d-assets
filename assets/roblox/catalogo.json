@@ -1,0 +1,430 @@
+{
+ "versao": 1,
+ "unidade": "metro",
+ "itens": [
+  {
+   "id": "personagem-blocos",
+   "nome": "Personagem de blocos (rig 6 ossos)",
+   "categoria": "characters",
+   "arquivo": "assets/roblox/characters/personagem-blocos.glb",
+   "formato": "glb",
+   "origem": {
+    "tipo": "kit-do-estudio",
+    "descricao": "Gerado por src/roblox/blocky-kit.js"
+   },
+   "licenca": {
+    "tipo": "proprio"
+   },
+   "dimensoes": {
+    "largura": 0.92,
+    "altura": 2.03,
+    "profundidade": 0.447
+   },
+   "escala": 1,
+   "animacoes": [
+    "andar",
+    "correr",
+    "parado",
+    "acenar"
+   ],
+   "dependencias": [],
+   "tags": [
+    "blocos",
+    "personagem",
+    "rig"
+   ],
+   "bytes": 30932
+  },
+  {
+   "id": "casa-blocos",
+   "nome": "Casa de blocos",
+   "categoria": "houses",
+   "arquivo": "assets/roblox/houses/casa-blocos.glb",
+   "formato": "glb",
+   "origem": {
+    "tipo": "kit-do-estudio",
+    "descricao": "Gerado por src/roblox/blocky-kit.js"
+   },
+   "licenca": {
+    "tipo": "proprio"
+   },
+   "dimensoes": {
+    "largura": 7.6,
+    "altura": 5.4,
+    "profundidade": 6.6
+   },
+   "escala": 1,
+   "animacoes": [],
+   "dependencias": [],
+   "tags": [
+    "blocos",
+    "casa",
+    "residencia"
+   ],
+   "bytes": 47540
+  },
+  {
+   "id": "predio-blocos",
+   "nome": "Prédio de 5 andares",
+   "categoria": "cities",
+   "arquivo": "assets/roblox/cities/predio-blocos.glb",
+   "formato": "glb",
+   "origem": {
+    "tipo": "kit-do-estudio",
+    "descricao": "Gerado por src/roblox/blocky-kit.js"
+   },
+   "licenca": {
+    "tipo": "proprio"
+   },
+   "dimensoes": {
+    "largura": 8.4,
+    "altura": 15.4,
+    "profundidade": 8.4
+   },
+   "escala": 1,
+   "animacoes": [],
+   "dependencias": [],
+   "tags": [
+    "blocos",
+    "cidade",
+    "predio"
+   ],
+   "bytes": 85476
+  },
+  {
+   "id": "arvore-blocos",
+   "nome": "Árvore de blocos",
+   "categoria": "forests",
+   "arquivo": "assets/roblox/forests/arvore-blocos.glb",
+   "formato": "glb",
+   "origem": {
+    "tipo": "kit-do-estudio",
+    "descricao": "Gerado por src/roblox/blocky-kit.js"
+   },
+   "licenca": {
+    "tipo": "proprio"
+   },
+   "dimensoes": {
+    "largura": 2.4,
+    "altura": 4.18,
+    "profundidade": 2.4
+   },
+   "escala": 1,
+   "animacoes": [],
+   "dependencias": [],
+   "tags": [
+    "blocos",
+    "arvore"
+   ],
+   "bytes": 46860
+  },
+  {
+   "id": "arvore-bola",
+   "nome": "Árvore de copa redonda",
+   "categoria": "forests",
+   "arquivo": "assets/roblox/forests/arvore-bola.glb",
+   "formato": "glb",
+   "origem": {
+    "tipo": "kit-do-estudio",
+    "descricao": "Gerado por src/roblox/blocky-kit.js"
+   },
+   "licenca": {
+    "tipo": "proprio"
+   },
+   "dimensoes": {
+    "largura": 3.2,
+    "altura": 5.2,
+    "profundidade": 3.2
+   },
+   "escala": 1,
+   "animacoes": [],
+   "dependencias": [],
+   "tags": [
+    "blocos",
+    "arvore"
+   ],
+   "bytes": 53448
+  },
+  {
+   "id": "carro-blocos",
+   "nome": "Carro de blocos",
+   "categoria": "vehicles",
+   "arquivo": "assets/roblox/vehicles/carro-blocos.glb",
+   "formato": "glb",
+   "origem": {
+    "tipo": "kit-do-estudio",
+    "descricao": "Gerado por src/roblox/blocky-kit.js"
+   },
+   "licenca": {
+    "tipo": "proprio"
+   },
+   "dimensoes": {
+    "largura": 1.97,
+    "altura": 1.365,
+    "profundidade": 3.87
+   },
+   "escala": 1,
+   "animacoes": [],
+   "dependencias": [],
+   "tags": [
+    "blocos",
+    "carro",
+    "veiculo"
+   ],
+   "bytes": 51000
+  },
+  {
+   "id": "rua-blocos",
+   "nome": "Trecho de rua 12 m com calçadas",
+   "categoria": "streets",
+   "arquivo": "assets/roblox/streets/rua-blocos.glb",
+   "formato": "glb",
+   "origem": {
+    "tipo": "kit-do-estudio",
+    "descricao": "Gerado por src/roblox/blocky-kit.js"
+   },
+   "licenca": {
+    "tipo": "proprio"
+   },
+   "dimensoes": {
+    "largura": 10.2,
+    "altura": 0.18,
+    "profundidade": 12
+   },
+   "escala": 1,
+   "animacoes": [],
+   "dependencias": [],
+   "tags": [
+    "blocos",
+    "rua",
+    "calcada"
+   ],
+   "bytes": 40944
+  },
+  {
+   "id": "poste-blocos",
+   "nome": "Poste de luz",
+   "categoria": "streets",
+   "arquivo": "assets/roblox/streets/poste-blocos.glb",
+   "formato": "glb",
+   "origem": {
+    "tipo": "kit-do-estudio",
+    "descricao": "Gerado por src/roblox/blocky-kit.js"
+   },
+   "licenca": {
+    "tipo": "proprio"
+   },
+   "dimensoes": {
+    "largura": 0.975,
+    "altura": 4.06,
+    "profundidade": 0.35
+   },
+   "escala": 1,
+   "animacoes": [],
+   "dependencias": [],
+   "tags": [
+    "blocos",
+    "iluminacao"
+   ],
+   "bytes": 7728
+  },
+  {
+   "id": "banco-blocos",
+   "nome": "Banco de praça",
+   "categoria": "props",
+   "arquivo": "assets/roblox/props/banco-blocos.glb",
+   "formato": "glb",
+   "origem": {
+    "tipo": "kit-do-estudio",
+    "descricao": "Gerado por src/roblox/blocky-kit.js"
+   },
+   "licenca": {
+    "tipo": "proprio"
+   },
+   "dimensoes": {
+    "largura": 1.8,
+    "altura": 0.98,
+    "profundidade": 0.51
+   },
+   "escala": 1,
+   "animacoes": [],
+   "dependencias": [],
+   "tags": [
+    "blocos",
+    "moveis",
+    "praca"
+   ],
+   "bytes": 10884
+  },
+  {
+   "id": "cerca-blocos",
+   "nome": "Cerca de madeira 4 m",
+   "categoria": "props",
+   "arquivo": "assets/roblox/props/cerca-blocos.glb",
+   "formato": "glb",
+   "origem": {
+    "tipo": "kit-do-estudio",
+    "descricao": "Gerado por src/roblox/blocky-kit.js"
+   },
+   "licenca": {
+    "tipo": "proprio"
+   },
+   "dimensoes": {
+    "largura": 4.1,
+    "altura": 1,
+    "profundidade": 0.115
+   },
+   "escala": 1,
+   "animacoes": [],
+   "dependencias": [],
+   "tags": [
+    "blocos",
+    "cerca"
+   ],
+   "bytes": 22944
+  },
+  {
+   "id": "mesa-blocos",
+   "nome": "Mesa",
+   "categoria": "interiors",
+   "arquivo": "assets/roblox/interiors/mesa-blocos.glb",
+   "formato": "glb",
+   "origem": {
+    "tipo": "kit-do-estudio",
+    "descricao": "Gerado por src/roblox/blocky-kit.js"
+   },
+   "licenca": {
+    "tipo": "proprio"
+   },
+   "dimensoes": {
+    "largura": 1.4,
+    "altura": 0.79,
+    "profundidade": 0.8
+   },
+   "escala": 1,
+   "animacoes": [],
+   "dependencias": [],
+   "tags": [
+    "blocos",
+    "moveis"
+   ],
+   "bytes": 12464
+  },
+  {
+   "id": "chao-pinos",
+   "nome": "Chão com pinos 40 m",
+   "categoria": "maps",
+   "arquivo": "assets/roblox/maps/chao-pinos.glb",
+   "formato": "glb",
+   "origem": {
+    "tipo": "kit-do-estudio",
+    "descricao": "Gerado por src/roblox/blocky-kit.js"
+   },
+   "licenca": {
+    "tipo": "proprio"
+   },
+   "dimensoes": {
+    "largura": 40,
+    "altura": 0.2,
+    "profundidade": 40
+   },
+   "escala": 1,
+   "animacoes": [],
+   "dependencias": [],
+   "tags": [
+    "blocos",
+    "chao",
+    "baseplate"
+   ],
+   "bytes": 11136
+  },
+  {
+   "id": "casa-teste-rbxm",
+   "nome": "Casa (importada de .rbxm binário)",
+   "categoria": "houses",
+   "arquivo": "assets/roblox/houses/casa-teste-rbxm.glb",
+   "formato": "glb",
+   "origem": {
+    "tipo": "arquivo-roblox",
+    "descricao": "Convertido de assets/roblox/_fontes/teste-casa.rbxm (arquivo de teste feito pelo estúdio)"
+   },
+   "licenca": {
+    "tipo": "proprio"
+   },
+   "dimensoes": {
+    "largura": 4.76,
+    "altura": 4.34,
+    "profundidade": 4.69
+   },
+   "escala": 1,
+   "animacoes": [],
+   "dependencias": [
+    {
+     "tipo": "malha",
+     "id": "rbxassetid://0000000001",
+     "resolvido": false
+    }
+   ],
+   "tags": [
+    "roblox",
+    "rbxm"
+   ],
+   "bytes": 78044,
+   "observacoes": "13 peças, 7 malhas após agrupar por material; 1 MeshPart sem malha local (magenta)"
+  },
+  {
+   "id": "praca-teste-rbxlx",
+   "nome": "Praça (importada de .rbxlx XML)",
+   "categoria": "maps",
+   "arquivo": "assets/roblox/maps/praca-teste-rbxlx.glb",
+   "formato": "glb",
+   "origem": {
+    "tipo": "arquivo-roblox",
+    "descricao": "Convertido de assets/roblox/_fontes/teste-praca.rbxlx (arquivo de teste feito pelo estúdio)"
+   },
+   "licenca": {
+    "tipo": "proprio"
+   },
+   "dimensoes": {
+    "largura": 33.6,
+    "altura": 5.6,
+    "profundidade": 33.6
+   },
+   "escala": 1,
+   "animacoes": [],
+   "dependencias": [],
+   "tags": [
+    "roblox",
+    "rbxlx"
+   ],
+   "bytes": 623056,
+   "observacoes": "36 peças, 15 malhas após agrupar por material; 0 MeshPart sem malha local (magenta)"
+  },
+  {
+   "id": "banco-blocos-obj",
+   "nome": "Banco de praça (OBJ)",
+   "categoria": "props",
+   "arquivo": "assets/roblox/props/banco-blocos.obj",
+   "formato": "obj",
+   "origem": {
+    "tipo": "kit-do-estudio",
+    "descricao": "OBJExporter do banco-blocos"
+   },
+   "licenca": {
+    "tipo": "proprio"
+   },
+   "dimensoes": {
+    "largura": 1.8,
+    "altura": 0.98,
+    "profundidade": 0.51
+   },
+   "escala": 1,
+   "animacoes": [],
+   "dependencias": [],
+   "tags": [
+    "obj"
+   ],
+   "bytes": 8621
+  }
+ ]
+}

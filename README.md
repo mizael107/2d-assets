@@ -1193,3 +1193,4 @@ O projeto agora é um estúdio de produção de animações 3D por código: pers
 - `npm run test:studio`: testes A–J.
 - `npm run demo:autocorrecao`: demonstração do ciclo de autocorreção.
 - Documentação completa em `docs/`.
+- Recursos Roblox e estilo blocos: `docs/ROBLOX_INTEGRACAO.md` e o índice `assets/roblox/README.md`. Testes: `npm run test:roblox`.

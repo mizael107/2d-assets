@@ -114,7 +114,9 @@ export function createCameraDirector(camera, { defaultEase = 'power2.inOut' } = 
     shake(at, duration, { amp = 0.05, freq = 22 } = {}) { shake.push({ start: at, end: at + duration, amp, freq }); return api; },
 
     update(t, dt = 1 / 30) {
-      tl.seek(t, false);
+      // render forçado: seek() não reprocessa se a timeline já estiver em t (ex.: t = 0 logo
+      // após a montagem), e a câmera ficaria na posição padrão.
+      tl.seek(t, false); tl.render(t, false, true);
       let pos = new THREE.Vector3(s.px, s.py, s.pz);
       let look = new THREE.Vector3(s.tx, s.ty, s.tz);
       for (const f of follows) {
