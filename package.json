@@ -1,0 +1,38 @@
+{
+  "name": "2d-assets",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "setup": "bash scripts/setup.sh",
+    "check": "node scripts/check-env.mjs",
+    "test:tools": "node scripts/test-tools.mjs",
+    "test:studio": "node scripts/studio-tests.mjs",
+    "sounds": "node src/audio/procedural.mjs",
+    "demo:autocorrecao": "node scripts/autocorrecao-demo.mjs",
+    "roblox:biblioteca": "node scripts/roblox-biblioteca.mjs",
+    "roblox:arquivos-teste": "node scripts/roblox-arquivos-teste.mjs",
+    "test:roblox": "node scripts/roblox-testes.mjs"
+  },
+  "dependencies": {
+    "@dimforge/rapier3d-compat": "^0.21.0",
+    "@gltf-transform/core": "^4.5.1",
+    "@gltf-transform/extensions": "^4.5.1",
+    "@gltf-transform/functions": "^4.5.1",
+    "@mediapipe/tasks-vision": "^1.2.3",
+    "@pixiv/three-vrm": "^3.5.5",
+    "camera-controls": "^3.1.2",
+    "fast-xml-parser": "^5.12.1",
+    "gsap": "^3.15.1",
+    "howler": "^2.2.4",
+    "lil-gui": "^0.21.0",
+    "playwright": "^1.65.1",
+    "postprocessing": "^6.39.6",
+    "rbxm-parser": "^1.1.4",
+    "sharp": "^0.35.5",
+    "stats.js": "^0.17.0",
+    "three": "^0.187.0",
+    "three-mesh-bvh": "^0.9.18",
+    "tone": "^15.1.22",
+    "zod": "^4.6.7"
+  }
+}
