@@ -1,0 +1,51 @@
+<!doctype html><html><head><meta charset="utf-8"><style>html,body{margin:0;overflow:hidden}</style>
+<script type="importmap">{"imports":{"three":"./node_modules/three/build/three.module.js","three/addons/":"./node_modules/three/examples/jsm/"}}</script></head><body>
+<script type="module">
+import * as THREE from 'three';
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
+const r = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true });
+r.setPixelRatio(devicePixelRatio); r.setSize(innerWidth, innerHeight);
+r.shadowMap.enabled = true; r.shadowMap.type = THREE.PCFSoftShadowMap; r.toneMapping = THREE.ACESFilmicToneMapping;
+document.body.appendChild(r.domElement);
+const s = new THREE.Scene(); s.background = new THREE.Color(0xe9e9e9);
+s.environment = new THREE.PMREMGenerator(r).fromScene(new RoomEnvironment(), 0.04).texture; s.environmentIntensity = 0.6;
+const key = new THREE.DirectionalLight(0xffffff, 2.2); key.position.set(3, 6, 4); key.castShadow = true; key.shadow.mapSize.set(2048, 2048); key.shadow.radius = 6;
+Object.assign(key.shadow.camera, { left: -4, right: 4, top: 4, bottom: -4, near: 0.5, far: 20 }); key.shadow.bias = -0.0005; s.add(key);
+const rim = new THREE.DirectionalLight(0xdfe8ff, 1.0); rim.position.set(-4, 3, -3); s.add(rim);
+const ground = new THREE.Mesh(new THREE.PlaneGeometry(20, 20), new THREE.ShadowMaterial({ opacity: 0.28 })); ground.rotation.x = -Math.PI / 2; ground.receiveShadow = true; s.add(ground);
+const cam = new THREE.PerspectiveCamera(26, innerWidth / innerHeight, 0.01, 100);
+let model;
+window.load = async (url) => { const g = await new GLTFLoader().loadAsync(url); model = g.scene; model.traverse(n => { if (n.isMesh) { n.castShadow = n.receiveShadow = true; } }); s.add(model); return true; };
+window.shot = (rotY, cam3, tgt) => { model.rotation.y = rotY; cam.position.set(...cam3); cam.lookAt(...tgt); r.render(s, cam); return true; };
+
+const VARIANTS = {
+  penosa: { dark: 0x4d5258, light: 0xc9ced3, amt: 0.85, scale: 1.0 },
+  desperta: { dark: 0xc98a12, light: 0xfff8e8, amt: 1.0, scale: 1.25, glow: 0xffb000 },
+  sombra: { dark: 0x12051e, light: 0x9a52d6, amt: 1.0, scale: 2.3, glow: 0x7a20c0 },
+};
+let base;
+window.loadBase = async (url) => { base = (await new GLTFLoader().loadAsync(url)).scene; return true; };
+window.addVariant = (name, x, z, ry) => {
+  const v = VARIANTS[name]; const o = base.clone(true);
+  o.traverse(n => { if (n.isMesh) {
+    n.castShadow = n.receiveShadow = true;
+    const m = n.material.clone();
+    m.onBeforeCompile = (sh) => {
+      sh.uniforms.uDark = { value: new THREE.Color(v.dark) }; sh.uniforms.uLight = { value: new THREE.Color(v.light) }; sh.uniforms.uAmt = { value: v.amt };
+      sh.fragmentShader = 'uniform vec3 uDark; uniform vec3 uLight; uniform float uAmt;\n' + sh.fragmentShader.replace('#include <map_fragment>', `#include <map_fragment>
+        { vec3 c = diffuseColor.rgb; float mx = max(c.r, max(c.g, c.b)); float mn = min(c.r, min(c.g, c.b));
+          float sat = (mx - mn) / (mx + 1e-4); float k = 1.0 - smoothstep(0.18, 0.38, sat);
+          float lum = dot(c, vec3(0.299, 0.587, 0.114));
+          vec3 t = mix(uDark, uLight, smoothstep(0.02, 0.85, lum));
+          diffuseColor.rgb = mix(c, t, k * uAmt); }`);
+    };
+    if (v.glow) { m.emissive = new THREE.Color(v.glow); m.emissiveIntensity = 0.08; }
+    n.material = m; } });
+  o.scale.setScalar(v.scale); o.position.set(x, 0, z); o.rotation.y = ry; s.add(o);
+  if (v.glow) { const l = new THREE.PointLight(v.glow, 1.5, 3 * v.scale); l.position.set(x, 0.6 * v.scale, z + 0.8 * v.scale); s.add(l); }
+  return true;
+};
+window.shotScene = (cam3, tgt, fov) => { cam.fov = fov || 26; cam.updateProjectionMatrix(); cam.position.set(...cam3); cam.lookAt(...tgt); r.render(s, cam); return true; };
+window.ready = true;
+</script></body></html>

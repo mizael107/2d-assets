@@ -1,0 +1,11 @@
+import { NodeIO } from '@gltf-transform/core';
+import { ALL_EXTENSIONS } from '@gltf-transform/extensions';
+import fs from 'fs';
+const io = new NodeIO().registerExtensions(ALL_EXTENSIONS);
+const doc = await io.read(process.argv[2]); const out = process.argv[3];
+const prim = doc.getRoot().listMeshes()[0].listPrimitives()[0];
+fs.writeFileSync(out + '_pos.bin', Buffer.from(prim.getAttribute('POSITION').getArray().buffer));
+fs.writeFileSync(out + '_uv.bin', Buffer.from(prim.getAttribute('TEXCOORD_0').getArray().buffer));
+fs.writeFileSync(out + '_idx.bin', Buffer.from(new Uint32Array(prim.getIndices().getArray()).buffer));
+const mat = prim.getMaterial(); fs.writeFileSync(out + '_base.jpg', Buffer.from(mat.getBaseColorTexture().getImage()));
+const n = doc.getRoot().listNodes().find(n => n.getMesh()); console.log('node T', n.getTranslation(), 'R', n.getRotation(), 'S', n.getScale());

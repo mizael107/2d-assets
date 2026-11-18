@@ -1,0 +1,28 @@
+<!doctype html><html><head><meta charset="utf-8"><style>html,body{margin:0;overflow:hidden}</style>
+<script type="importmap">{"imports":{"three":"./node_modules/three/build/three.module.js","three/addons/":"./node_modules/three/examples/jsm/"}}</script></head><body>
+<script type="module">
+import * as THREE from 'three';
+import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
+import { HENS } from './hen.js';
+const r = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true });
+r.setPixelRatio(devicePixelRatio); r.setSize(innerWidth, innerHeight);
+r.shadowMap.enabled = true; r.shadowMap.type = THREE.PCFSoftShadowMap; r.toneMapping = THREE.ACESFilmicToneMapping; r.toneMappingExposure = 1.0;
+document.body.appendChild(r.domElement);
+const s = new THREE.Scene(); s.background = new THREE.Color(0xe9e9e9);
+s.environment = new THREE.PMREMGenerator(r).fromScene(new RoomEnvironment(), 0.04).texture; s.environmentIntensity = 0.55;
+const key = new THREE.DirectionalLight(0xffffff, 2.4); key.position.set(4, 7, 5); key.castShadow = true; key.shadow.mapSize.set(2048, 2048); key.shadow.radius = 6;
+Object.assign(key.shadow.camera, { left: -4, right: 4, top: 4, bottom: -4, near: 0.5, far: 30 }); key.shadow.bias = -0.0004; key.shadow.normalBias = 0.02; s.add(key);
+const rim = new THREE.DirectionalLight(0xdfe8ff, 1.2); rim.position.set(-5, 4, -4); s.add(rim);
+s.add(new THREE.HemisphereLight(0xffffff, 0xbbbbbb, 0.6));
+const ground = new THREE.Mesh(new THREE.PlaneGeometry(60, 60), new THREE.ShadowMaterial({ opacity: 0.28 })); ground.rotation.x = -Math.PI / 2; ground.receiveShadow = true; s.add(ground);
+const cam = new THREE.PerspectiveCamera(30, innerWidth / innerHeight, 0.05, 200);
+const actors = [];
+window.setup = (cfg) => {
+  actors.forEach(a => s.remove(a)); actors.length = 0;
+  for (const a of cfg.actors) { const o = HENS[a.kind](); o.position.set(...a.pos); o.rotation.y = a.rotY || 0; s.add(o); actors.push(o); }
+  if (cfg.bg) s.background = new THREE.Color(cfg.bg);
+  cam.fov = cfg.fov || 30; cam.updateProjectionMatrix(); cam.position.set(...cfg.cam); cam.lookAt(...cfg.target);
+  r.render(s, cam); return true;
+};
+window.ready = true;
+</script></body></html>

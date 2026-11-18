@@ -1,0 +1,10 @@
+import fs from 'fs';
+const b = fs.readFileSync(process.argv[2]);
+const len = b.readUInt32LE(12); const json = JSON.parse(b.slice(20, 20 + len).toString());
+console.log('meshes', json.meshes?.map(m => m.name + ':' + m.primitives.length));
+console.log('materials', json.materials?.map(m => m.name));
+console.log('images', json.images?.length || 0, 'textures', json.textures?.length || 0);
+console.log('skins', json.skins?.map(s => s.joints.length + ' joints'));
+console.log('animations', json.animations?.map(a => a.name));
+let tris = 0; for (const m of json.meshes) for (const p of m.primitives) { const acc = json.accessors[p.indices ?? p.attributes.POSITION]; tris += (p.indices != null ? acc.count : acc.count) / 3; } console.log('tris', tris);
+console.log('extensions', json.extensionsUsed);
