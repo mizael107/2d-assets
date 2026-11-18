@@ -6,6 +6,7 @@ import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
 import { buildChicken, CHICK_PROFILE } from './chickenRig.js';
 import { buildHuman } from './humanRig.js';
+import * as SkeletonUtils from 'three/addons/utils/SkeletonUtils.js';
 const r = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true });
 r.setPixelRatio(devicePixelRatio); r.setSize(innerWidth, innerHeight);
 r.shadowMap.enabled = true; r.shadowMap.type = THREE.PCFSoftShadowMap; r.toneMapping = THREE.ACESFilmicToneMapping;
@@ -64,7 +65,61 @@ window.initChick = async () => { chickBase = (await new GLTFLoader().loadAsync('
 window.placeChick = (id, x, z, ry, scale) => { const c = buildChicken(chickBase, { scale: scale || 0.5 }, CHICK_PROFILE); c.position.set(x, 0, z); c.rotation.y = ry; s.add(c); chickens[id] = c; return true; };
 window.initHuman = async () => { humanBase = (await new GLTFLoader().loadAsync('ref/menino_main.glb')).scene; return true; };
 window.placeHuman = (id, x, z, ry, scale) => { const h = buildHuman(humanBase, { scale: scale || 3 }); h.position.set(x, 0, z); h.rotation.y = ry; s.add(h); chickens[id] = h; return true; };
+window.bboxOf = (id) => { const b = new THREE.Box3().setFromObject(chickens[id], true); return [b.min.toArray().map(v=>+v.toFixed(2)), b.max.toArray().map(v=>+v.toFixed(2))]; };
 window.speedOf = (id, st) => chickens[id].userData.speed(st);
 window.move = (id, x, z, ry) => { const c = chickens[id]; c.position.set(x, 0, z); c.rotation.y = ry; return true; };
+
+let animBase = null;
+window.initAnimHuman = async () => {
+  animBase = await new GLTFLoader().loadAsync('ref/menino_animado.glb');
+  return true;
+};
+window.placeAnimHuman = (id, x, z, ry, height) => {
+  const scene = SkeletonUtils.clone(animBase.scene);
+  scene.traverse(n => { if (n.isMesh) { n.castShadow = n.receiveShadow = true; n.frustumCulled = false; if (n.material) { n.material = n.material.clone(); n.material.side = THREE.DoubleSide; } } });
+  const holder = new THREE.Group(); holder.add(scene);
+  const mixer = new THREE.AnimationMixer(scene);
+  const clips = Object.fromEntries(animBase.animations.map(c => [c.name, c]));
+  const actions = Object.fromEntries(Object.entries(clips).map(([k, c]) => [k, mixer.clipAction(c)]));
+  Object.values(actions).forEach(a => { a.play(); a.setEffectiveWeight(0); });
+  // measure height in idle and normalise
+  actions.idle.setEffectiveWeight(1); mixer.setTime(0); holder.updateMatrixWorld(true);
+  const box = new THREE.Box3().setFromObject(scene, true); const hgt = box.max.y - box.min.y;
+  scene.position.y = -box.min.y; holder.scale.setScalar((height || 1.95) / hgt);
+  let hips = null; scene.traverse(o => { if (!hips && o.isBone) hips = o; });
+  const off = {};
+  for (const k of Object.keys(actions)) {
+    Object.values(actions).forEach(a => a.setEffectiveWeight(0)); actions[k].setEffectiveWeight(1); actions[k].time = 0; mixer.update(0);
+    holder.updateMatrixWorld(true); const bb = new THREE.Box3().setFromObject(scene, true); const wp = bb.getCenter(new THREE.Vector3());
+    scene.worldToLocal(wp); off[k] = wp;
+  }
+  for (const k of Object.keys(off)) if (k !== 'idle') off[k] = new THREE.Vector3(off[k].x - off.idle.x, 0, off[k].z - off.idle.z);
+  off.idle = new THREE.Vector3();
+  const baseY = scene.position.y;
+  const map = { idle: 'idle', walk: 'walk', run: 'run', celebrate: 'jump', jump: 'jump', scared: 'hurt', hurt: 'hurt', point: 'idle' };
+  let cur = null, prev = null, changeT = 0, startT = 0;
+  holder.userData = {
+    speed(st) { return st === 'walk' ? 1.25 : st === 'run' ? 3.4 : 0; },
+    pose(st, t) {
+      const c = map[st] || 'idle';
+      if (c !== cur) { prev = cur; cur = c; changeT = t; startT = t; }
+      const w = prev ? Math.min(1, (t - changeT) / 0.3) : 1;
+      const last = holder.userData._last || (holder.userData._last = {});
+      for (const [k, a] of Object.entries(actions)) {
+        const wt = k === cur ? w : k === prev ? 1 - w : 0;
+        a.setEffectiveWeight(wt);
+        const d = clips[k].duration;
+        const tt = k === cur ? t - startT : (last[k] || 0) + (t - changeT);
+        a.time = ((tt % d) + d) % d;
+        if (k === cur) last[k] = a.time;
+      }
+      mixer.update(0);
+      const comp = new THREE.Vector3();
+      for (const [k, a] of Object.entries(actions)) comp.addScaledVector(off[k], a.getEffectiveWeight());
+      scene.position.set(-comp.x * scene.scale.x, baseY, -comp.z * scene.scale.z);
+    },
+  };
+  holder.position.set(x, 0, z); holder.rotation.y = ry; s.add(holder); chickens[id] = holder; return true;
+};
 window.ready = true;
 </script></body></html>

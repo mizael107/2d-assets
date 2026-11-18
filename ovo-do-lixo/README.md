@@ -9,6 +9,7 @@ Os modelos 3D são gerados no Tripo Studio; aqui ficam as versões otimizadas, o
 | Pasta / arquivo | O que é |
 |---|---|
 | `chickenRig.js` | Rig das galinhas: esqueleto, cores por elemento (crista, cauda, olhos), efeitos (raio, fogo, gelo, sombra, arco-íris) e ações: `idle`, `walk`, `run`, `scratch` (ciscar), `peck`, `flap`, `sit`, `preen`, `fight`, `sleep`. Inclui `CHICK_PROFILE` para o pintinho. |
+| `ref/menino_animado.glb` | Menino com esqueleto profissional do Tripo (78 ossos) e 5 animações: `idle`, `walk`, `run`, `jump`, `hurt`. Carregado por `placeAnimHuman` em `rig.html`. |
 | `humanRig.js` | Rig do menino protagonista: `idle`, `walk`, `run`, `point`, `scared`, `celebrate`. |
 | `rig.html` | Página Three.js que carrega modelos, arena e expõe funções para os scripts de render. |
 | `life.cjs` | Cena da arena com 9 galinhas, cada uma com rotina própria (sem sincronia), briga e susto. |
@@ -43,5 +44,4 @@ npx gltf-transform resize s.glb saida.glb --width 2048 --height 2048
 
 ## Pendências
 - Galinha do mais rico da cidade (modelo a enviar).
-- Rig profissional do menino via Tripo API (aguardando créditos).
 - Cor da Penosa (pintinho amarelo atual × cinza do roteiro).
