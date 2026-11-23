@@ -20,13 +20,13 @@ O **guia completo** de como o vídeo foi feito (roteiro, ganchos, estilo, som, l
 | `audio/mix_full.py` | Trilha: narração + fala do Kaio + música + ambiente + efeitos, com ducking |
 | `audio/legendas.py` | Legendas amarelas palavra por palavra (fala do Kaio em vermelho) |
 | `audio/narr/` | Narração original (ElevenLabs, voz Brian) e a fala do Kaio (voz Dagozin!) |
-| `audio/narr_proc/`, `audio/sfx/` | Narração tratada e efeitos em `.ogg` (os `.wav` originais estão no Google Drive) |
+| `audio/narr_proc/`, `audio/sfx/` | Narração tratada e efeitos, em `.ogg` para ocupar menos espaço (o `mix_full.py` lê `.ogg` direto) |
 | `ref/`, `assets/` | Modelos 3D e cenários usados |
 
 ## O que não está aqui
 
-- `ref/achados/`: figurantes da plateia, vindos do projeto Achados, que é **privado**. Eles estão no backup do Google Drive
-  (pasta "O Ovo do Lixo"). Copie a pasta para `ref/achados/` antes de renderizar.
+- `ref/achados/`: figurantes da plateia, exportados dos personagens do projeto Achados, que é **privado** (por isso não
+  ficam neste repositório público). Para gerar: `node exp_achados.cjs <pasta do clone do repositório Achados>`.
 - O vídeo final está em `O_Ovo_do_Lixo_final.mp4` (720x1280; versão leve no Google Drive).
 
 ## Como renderizar
