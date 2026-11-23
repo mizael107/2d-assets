@@ -27,7 +27,7 @@ O **guia completo** de como o vídeo foi feito (roteiro, ganchos, estilo, som, l
 
 - `ref/achados/`: figurantes da plateia, vindos do projeto Achados, que é **privado**. Eles estão no backup do Google Drive
   (pasta "O Ovo do Lixo"). Copie a pasta para `ref/achados/` antes de renderizar.
-- O vídeo final (106 MB): está no Google Drive.
+- O vídeo final está em `O_Ovo_do_Lixo_final.mp4` (720x1280; versão leve no Google Drive).
 
 ## Como renderizar
 
