@@ -1,0 +1,13 @@
+Sounds from Soundza — https://soundza.com
+Licensed under the Soundza Standard License: https://soundza.com/license
+
+- crowd.wav — "Stadium Crowd Goal Reaction" — https://soundza.com/sound/stadium-crowd-goal-reaction
+- music_battle.wav — "Epic Boss Battle" — https://soundza.com/sound/epic-boss-battle
+- Demais efeitos: gerados por IA no Soundza (generate_sound)
+- music_light.wav — "Playful Romantic Comedy 3" — https://soundza.com/sound/playful-romantic-comedy-3 [AI-generated]
+- music_piano.wav — "Hopeful Flowing Piano 1" — https://soundza.com/sound/hopeful-flowing-piano-1 [AI-generated]
+- amb_street.wav — "Shopping Street Ambience" — https://soundza.com/sound/shopping-street-ambience
+- amb_birds.wav — "Birds Field Recording Textuure" — https://soundza.com/sound/birds-field-recording-textuure
+- amb_rain.wav — "Heavy Rain Falling Through Trees" — https://soundza.com/sound/heavy-rain-falling-through-trees
+- amb_night.wav — "Cricket Night Ambience" — https://soundza.com/sound/cricket-night-ambience
+sad.wav  soundza AI take cmws5puql027u07kxanzk4fip

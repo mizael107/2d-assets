@@ -1,0 +1,399 @@
+<!doctype html><html><head><meta charset="utf-8"><style>html,body{margin:0;overflow:hidden}</style>
+<script type="importmap">{"imports":{"three":"./node_modules/three/build/three.module.js","three/addons/":"./node_modules/three/examples/jsm/"}}</script></head><body>
+<script type="module">
+import * as THREE from 'three';
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
+import { buildChicken, CHICK_PROFILE } from './chickenRig.js';
+import { buildHuman } from './humanRig.js';
+import { buildR6 } from './r6Rig.js';
+import { buildR6v2 } from './r6Rig2.js';
+import { buildKitBoy } from './r6Kit.js';
+import { dressPenosa, dressSombra, penFaceTex, makeEvoFX } from './penosa.js';
+import * as SC1 from './scenes.js';
+import * as SC2 from './scenes2.js';
+const SC = { ...SC1, ...SC2 };
+import * as FX from './fx.js';
+import * as FA from './fxAnim.js';
+window.FA = FA;
+window.FX = FX; window.SC = SC; window.THREE = THREE;
+// per-shot extras (effects, props): cleared between shots
+let shotG = null;
+window.clearShot = () => { if (shotG) { s.remove(shotG); shotG.traverse(o => { if (o.geometry) o.geometry.dispose(); }); } shotG = new THREE.Group(); s.add(shotG); return true; };
+window.addFX = (name, args = [], pos = [0, 0, 0], rot = [0, 0, 0], sc = 1) => { if (!shotG) window.clearShot(); const o = (FX[name] || SC[name])(...args); o.position.set(...pos); o.rotation.set(...rot); if (o.scale) o.scale.multiplyScalar(sc); shotG.add(o); return true; };
+window.has = (id) => !!chickens[id];
+window.__ch = (id) => chickens[id];
+window.tilt = (id, rx, rz, dy = 0) => { const c = chickens[id]; c.rotation.x = rx; c.rotation.z = rz; c.position.y += dy; return true; };
+window.THREE_V = THREE.Vector3; window.__hand = (id, sd, v) => { s.updateMatrixWorld(true); chickens[id].userData.hands[sd].getWorldPosition(v); return v; };
+window.pos = (id, x, y, z, ry) => { const c = chickens[id]; c.position.set(x, y, z); if (ry != null) c.rotation.y = ry; return true; };
+window.hideNamed = (n) => { const o = s.getObjectByName(n); if (o) o.visible = false; return !!o; };
+window.fa = (name, args = []) => { if (!shotG) window.clearShot(); const o = FA[name](...args); shotG.add(o); return true; };
+// fixed pool of lights for effects (never added/removed -> no shader recompiles)
+const fxL = []; const fxPool = () => { if (!fxL.length) for (let i = 0; i < 4; i++) { const l = new THREE.PointLight(0xffffff, 0, 6, 2); s.add(l); fxL.push(l); } };
+window.fxLight = (i, p, color, intensity, dist = 6) => { fxPool(); const l = fxL[i]; l.position.set(...p); l.color.set(color); l.intensity = intensity; l.distance = dist; return true; };
+window.fxLightsOff = () => { fxPool(); fxL.forEach(l => l.intensity = 0); return true; };
+// hit flash: tint the character's emissive for one frame
+window.flashChar = (id, color, k) => { chickens[id].traverse(n => { if (!n.isMesh || !n.material || !n.material.emissive) return; const m = n.material; if (!m.userData.em0) m.userData.em0 = [m.emissive.getHex(), m.emissiveIntensity];
+  if (k > 0.01) { m.emissive.set(color); m.emissiveIntensity = k * 1.5; } else { m.emissive.setHex(m.userData.em0[0]); m.emissiveIntensity = m.userData.em0[1]; } }); return true; };
+// place a character so that it rotates about its own centre (h = its height): for flips and spins in the air
+window.spinAbout = (id, c, ry, rx, rz, h) => { const o = chickens[id]; o.rotation.order = 'YXZ'; o.rotation.set(rx, ry, rz); o.updateMatrix(); const off = new THREE.Vector3(0, h / 2, 0).applyQuaternion(o.quaternion); o.position.set(c[0] - off.x, c[1] - off.y, c[2] - off.z); return true; };
+window.vis = (id, v) => { if (chickens[id]) chickens[id].visible = v; return true; };
+window.holdProp = (id, side, name, args = [], off = [0, 0, 0], sc = 1) => { const h = chickens[id].userData.hands[side]; while (h.children.length) h.remove(h.children[0]); if (!name) return true; const o = (FX[name] || SC[name])(...args); const k = 1 / chickens[id].scale.x; o.scale.multiplyScalar(k * sc); o.position.set(...off.map(v => v * k)); h.add(o); return true; };
+window.setBoard = (lines, opts) => { const b = s.userData.board; if (!b) return false; const n = SC.textPanel(lines, b.geometry.parameters.width, b.geometry.parameters.height, opts || { lit: 1.0 }); b.material = n.material; return true; };
+import * as SkeletonUtils from 'three/addons/utils/SkeletonUtils.js';
+import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
+import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
+import { GTAOPass } from 'three/addons/postprocessing/GTAOPass.js';
+import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
+import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
+const r = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true });
+r.setPixelRatio(devicePixelRatio); r.setSize(innerWidth, innerHeight);
+r.shadowMap.enabled = true; r.shadowMap.type = THREE.PCFSoftShadowMap; r.toneMapping = THREE.ACESFilmicToneMapping;
+document.body.appendChild(r.domElement);
+const s = new THREE.Scene(); window.__scene = s; s.background = new THREE.Color(0xe9e9e9);
+s.environment = new THREE.PMREMGenerator(r).fromScene(new RoomEnvironment(), 0.04).texture; s.environmentIntensity = 0.6;
+const key = new THREE.DirectionalLight(0xffffff, 2.2); key.position.set(3, 6, 4); key.castShadow = true; key.shadow.mapSize.set(2048, 2048); key.shadow.radius = 6;
+Object.assign(key.shadow.camera, { left: -4, right: 4, top: 4, bottom: -4, near: 0.5, far: 20 }); key.shadow.bias = -0.0005; s.add(key);
+const rim = new THREE.DirectionalLight(0xdfe8ff, 1.0); rim.position.set(-4, 3, -3); s.add(rim);
+const ground = new THREE.Mesh(new THREE.PlaneGeometry(40, 40), new THREE.ShadowMaterial({ opacity: 0.28 })); ground.rotation.x = -Math.PI / 2; ground.receiveShadow = true; s.add(ground);
+const cam = new THREE.PerspectiveCamera(26, innerWidth / innerHeight, 0.01, 100);
+let base; const chickens = {};
+window.init = async () => { base = (await new GLTFLoader().loadAsync('ref/chicken_lite.glb')).scene; return true; };
+window.place = (id, variant, x, z, ry) => { const c = buildChicken(base, variant); c.position.set(x, 0, z); c.rotation.y = ry; s.add(c); chickens[id] = c; return true; };
+window.clear = () => { for (const k in chickens) { s.remove(chickens[k]); delete chickens[k]; } };
+window.frame = (poses, t, cam3, tgt, fov) => {
+  for (const [id, st] of Object.entries(poses)) { const [s0, o] = Array.isArray(st) ? st : [st, {}]; chickens[id].userData.pose(s0, t, o); }
+  cam.fov = fov || 26; cam.updateProjectionMatrix(); cam.position.set(...cam3); cam.lookAt(...tgt);
+  if (film) {   // keep the sharp shadow box centred on what the camera looks at
+    key.target.position.set(tgt[0], 0, tgt[2]); key.position.set(tgt[0] + 6, 10, tgt[2] + 4.5); key.target.updateMatrixWorld();
+    if (camFill) camFill.position.set(cam.position.x * 0.7 + tgt[0] * 0.3, cam.position.y + 0.6, cam.position.z * 0.7 + tgt[2] * 0.3);
+    film.render();
+  } else r.render(s, cam);
+  return true;
+};
+let film = null, camFill = null;
+window.filmLook = () => {
+  r.toneMapping = THREE.ACESFilmicToneMapping; r.toneMappingExposure = 1.05;
+  key.color.set(0xfff0d6); key.intensity = 3.2; key.shadow.mapSize.set(4096, 4096); key.shadow.radius = 4; key.shadow.bias = -0.0003; key.shadow.normalBias = 0.02;
+  Object.assign(key.shadow.camera, { left: -7, right: 7, top: 7, bottom: -7, near: 0.5, far: 40 }); key.shadow.camera.updateProjectionMatrix(); s.add(key.target);
+  camFill = new THREE.PointLight(0xfff1dc, 2.2, 6, 1.6); s.add(camFill);
+  rim.color.set(0xcfe2ff); rim.intensity = 1.6; rim.position.set(-5, 4, -6);
+  s.add(new THREE.HemisphereLight(0xbfe0ff, 0x8a6040, 0.9));                          // sky + warm bounce from the dirt
+  const fill = new THREE.DirectionalLight(0xffe2c0, 0.5); fill.position.set(-3, 1.5, 5); s.add(fill);
+  s.environmentIntensity = 0.55;
+  film = new EffectComposer(r); film.setPixelRatio(devicePixelRatio); film.setSize(innerWidth, innerHeight);
+  film.addPass(new RenderPass(s, cam));
+  // (GTAO removed: it produced a dark rectangle artifact under SwiftShader)
+  film.addPass(new UnrealBloomPass(new THREE.Vector2(innerWidth, innerHeight), 0.18, 0.5, 0.92));
+  film.addPass(new OutputPass());
+  return true;
+};
+// ---- expression heads on the animated boy ----
+window.attachExprHeads = async (id) => {
+  const holder = chickens[id]; const scene = holder.children[0];
+  let sk = null, headBone = null; scene.traverse(o => { if (o.isSkinnedMesh && !sk) sk = o; if (o.isBone && o.name === 'Head') headBone = o; });
+  const hi = sk.skeleton.bones.indexOf(headBone);
+  // hide the original head: discard fragments of vertices mostly weighted to the Head bone
+  sk.material = sk.material.clone();
+  sk.material.onBeforeCompile = (sh) => {
+    sh.vertexShader = 'varying float vHead;\n' + sh.vertexShader.replace('#include <skinning_vertex>', `#include <skinning_vertex>
+      vHead = (skinIndex.x == ${hi}.0 ? skinWeight.x : 0.0) + (skinIndex.y == ${hi}.0 ? skinWeight.y : 0.0) + (skinIndex.z == ${hi}.0 ? skinWeight.z : 0.0) + (skinIndex.w == ${hi}.0 ? skinWeight.w : 0.0);`);
+    sh.fragmentShader = 'varying float vHead;\n' + sh.fragmentShader.replace('void main() {', 'void main() {\n if (vHead > 0.5) discard;');
+  };
+  // bbox of the original head (current pose, world space)
+  holder.updateMatrixWorld(true);
+  const sw = sk.geometry.attributes.skinWeight, si = sk.geometry.attributes.skinIndex, v = new THREE.Vector3(), hb = new THREE.Box3();
+  for (let i = 0; i < sw.count; i++) {
+    let w = 0; for (let k = 0; k < 4; k++) if (si.getComponent(i, k) === hi) w += sw.getComponent(i, k);
+    if (w > 0.5) { sk.getVertexPosition(i, v); v.applyMatrix4(sk.matrixWorld); hb.expandByPoint(v); }
+  }
+  const heads = [];
+  for (let e = 0; e < 4; e++) {
+    const g = (await new GLTFLoader().loadAsync(`ref/expr_${e}.glb`)).scene;
+    g.traverse(o => { if (o.isMesh) { o.castShadow = o.receiveShadow = true; o.material.side = THREE.DoubleSide; } });
+    const wrap = new THREE.Group(); wrap.add(g); s.add(wrap);
+    // align: same width, same top, same centre (x/z), facing the same way as the body
+    wrap.quaternion.copy(holder.quaternion); wrap.updateMatrixWorld(true);
+    let eb = new THREE.Box3().setFromObject(g, true);
+    const k = (hb.max.x - hb.min.x) / (eb.max.x - eb.min.x) * 1.0; wrap.scale.setScalar(k); wrap.updateMatrixWorld(true);
+    eb = new THREE.Box3().setFromObject(g, true);
+    wrap.position.x += (hb.min.x + hb.max.x) / 2 - (eb.min.x + eb.max.x) / 2;
+    wrap.position.z += (hb.min.z + hb.max.z) / 2 - (eb.min.z + eb.max.z) / 2;
+    wrap.position.y += hb.max.y - eb.max.y;
+    wrap.updateMatrixWorld(true); headBone.attach(wrap); wrap.visible = e === 0; heads.push(wrap);
+  }
+  // dark scalp inside the curls so the sky never shows through the gaps
+  const W = hb.max.x - hb.min.x, Hh = hb.max.y - hb.min.y, D = hb.max.z - hb.min.z;
+  const scalp = new THREE.Mesh(new THREE.SphereGeometry(1, 32, 24), new THREE.MeshStandardMaterial({ color: 0x15100c, roughness: 0.9 }));
+  scalp.scale.set(W * 0.4, Hh * 0.34, D * 0.4); scalp.position.set((hb.min.x + hb.max.x) / 2, hb.max.y - Hh * 0.36, (hb.min.z + hb.max.z) / 2 - D * 0.04);
+  scalp.castShadow = true; s.add(scalp); scalp.updateMatrixWorld(true); headBone.attach(scalp);
+  holder.userData.heads = heads;
+  holder.userData.setExpr = (e) => heads.forEach((w, i) => (w.visible = i === e));
+  return [hb.min.toArray(), hb.max.toArray()];
+};
+window.setExpr = (id, e) => { chickens[id].userData.setExpr(e); return true; };
+
+import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
+window.arena = () => {
+  ground.visible = false;
+  const sky = document.createElement('canvas'); sky.width = 2; sky.height = 256;
+  { const g = sky.getContext('2d'); const gr = g.createLinearGradient(0, 0, 0, 256); gr.addColorStop(0, '#2f8cf0'); gr.addColorStop(0.65, '#8fcfff'); gr.addColorStop(1, '#e2f3ff'); g.fillStyle = gr; g.fillRect(0, 0, 2, 256); }
+  const st = new THREE.CanvasTexture(sky); st.colorSpace = THREE.SRGBColorSpace; s.background = st; s.fog = new THREE.Fog(0xcfe9ff, 18, 45);
+  const M = (c, r = 0.9) => new THREE.MeshStandardMaterial({ color: c, roughness: r });
+  const grass = new THREE.Mesh(new THREE.PlaneGeometry(120, 120), M(0x58b845)); grass.rotation.x = -Math.PI / 2; grass.receiveShadow = true; s.add(grass);
+  // dirt with subtle noise texture
+  const dc = document.createElement('canvas'); dc.width = dc.height = 512; const dg = dc.getContext('2d'); dg.fillStyle = '#9a6440'; dg.fillRect(0, 0, 512, 512);
+  for (let i = 0; i < 2500; i++) { dg.fillStyle = `rgba(${Math.random() < 0.5 ? '60,35,20' : '190,140,100'},${Math.random() * 0.25})`; dg.beginPath(); dg.arc(Math.random() * 512, Math.random() * 512, Math.random() * 6, 0, 7); dg.fill(); }
+  const dt = new THREE.CanvasTexture(dc); dt.colorSpace = THREE.SRGBColorSpace; dt.wrapS = dt.wrapT = THREE.RepeatWrapping; dt.repeat.set(4, 4);
+  const dirt = new THREE.Mesh(new THREE.CircleGeometry(4.2, 72), new THREE.MeshStandardMaterial({ map: dt, roughness: 1 })); dirt.rotation.x = -Math.PI / 2; dirt.position.y = 0.005; dirt.receiveShadow = true; s.add(dirt);
+  const R = 4.35, n = 40;
+  for (let i = 0; i < n; i++) {
+    const a = i / n * Math.PI * 2;
+    const post = new THREE.Mesh(new RoundedBoxGeometry(0.12, 0.65, 0.12, 2, 0.02), M(0x6b4428)); post.position.set(Math.cos(a) * R, 0.325, Math.sin(a) * R); post.castShadow = true; s.add(post);
+    const a2 = (i + 0.5) / n * Math.PI * 2, len = 2 * Math.PI * R / n;
+    for (const y of [0.22, 0.48]) { const rail = new THREE.Mesh(new RoundedBoxGeometry(len, 0.07, 0.05, 2, 0.015), M(0x7d5232)); rail.position.set(Math.cos(a2) * R, y, Math.sin(a2) * R); rail.rotation.y = -a2 + Math.PI / 2; rail.castShadow = true; s.add(rail); }
+  }
+  for (let i = 0; i < 30; i++) { const a = i * 2.4, rr = 0.6 + (i * 1.37) % 3.4; const st2 = new THREE.Mesh(new RoundedBoxGeometry(0.1 + (i % 3) * 0.05, 0.05, 0.08, 2, 0.02), M(i % 2 ? 0x8b8378 : 0x6f5038)); st2.position.set(Math.cos(a) * rr, 0.025, Math.sin(a) * rr); st2.rotation.y = i; st2.receiveShadow = true; s.add(st2); }
+  // feathers on the ground
+  for (let i = 0; i < 12; i++) { const f = new THREE.Mesh(new THREE.SphereGeometry(0.05, 10, 6), M(0xf2f2f2)); f.scale.set(0.35, 0.05, 1); const a = i * 1.9, rr = 0.8 + (i * 0.77) % 3; f.position.set(Math.cos(a) * rr, 0.01, Math.sin(a) * rr); f.rotation.y = i; s.add(f); }
+  // trees & clouds
+  for (let i = 0; i < 26; i++) { const a = i / 26 * Math.PI * 2, rr = 9 + (i % 4) * 2.5; const t = new THREE.Group();
+    const trunk = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.16, 1.0, 8), M(0x6b4a2a)); trunk.position.y = 0.5; t.add(trunk);
+    const top = new THREE.Mesh(new THREE.IcosahedronGeometry(0.8 + (i % 3) * 0.2, 1), M([0x2f8f3a, 0x3fa448, 0x268035][i % 3])); top.position.y = 1.5; top.castShadow = true; t.add(top);
+    t.position.set(Math.cos(a) * rr, 0, Math.sin(a) * rr); s.add(t); }
+  for (let i = 0; i < 9; i++) { const c = new THREE.Group(); for (let j = 0; j < 4; j++) { const b = new THREE.Mesh(new THREE.SphereGeometry(1, 12, 8), new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 1, emissive: 0xffffff, emissiveIntensity: 0.25 })); b.scale.set(1.6 + j * 0.3, 0.8, 1); b.position.set(j * 1.5 - 2.2, (j % 2) * 0.35, 0); c.add(b); } c.position.set(-28 + i * 7, 9 + (i % 3) * 2, -30 - (i % 2) * 6); s.add(c); }
+  key.intensity = 2.6; key.position.set(4, 8, 5); Object.assign(key.shadow.camera, { left: -6, right: 6, top: 6, bottom: -6 }); key.shadow.camera.updateProjectionMatrix();
+  s.environmentIntensity = 0.45;
+  return true;
+};
+let humanBase, chickBase;
+window.initChick = async () => { chickBase = (await new GLTFLoader().loadAsync('entrega/pintinho_20k.glb')).scene; return true; };
+window.placeChick = (id, x, z, ry, scale) => { const c = buildChicken(chickBase, { scale: scale || 0.5 }, CHICK_PROFILE); c.position.set(x, 0, z); c.rotation.y = ry; s.add(c); chickens[id] = c; return true; };
+window.initHuman = async () => { humanBase = (await new GLTFLoader().loadAsync('ref/menino_main.glb')).scene; return true; };
+window.placeHuman = (id, x, z, ry, scale) => { const h = buildHuman(humanBase, { scale: scale || 3 }); h.position.set(x, 0, z); h.rotation.y = ry; s.add(h); chickens[id] = h; return true; };
+window.bboxOf = (id) => { const b = new THREE.Box3().setFromObject(chickens[id], true); return [b.min.toArray().map(v=>+v.toFixed(2)), b.max.toArray().map(v=>+v.toFixed(2))]; };
+const animCache = {};
+window.__clipDur = (name) => { for (const k in animCache) { const c = animCache[k].animations.find(a => a.name === name); if (c) return c.duration; } return 1; };
+window.loadAnimated = async (key, file) => { animCache[key] = await new GLTFLoader().loadAsync(file); return animCache[key].animations.map(a => a.name); };
+window.dressPenosa = (key, cfg) => dressPenosa(animCache[key].scene, cfg);
+window.dressSombra = (key, cfg) => dressSombra(animCache[key].scene, cfg);
+window.placeAnimated = (id, key, x, z, ry, height) => {
+  const base = animCache[key]; const scene = SkeletonUtils.clone(base.scene);
+  const dress = base.scene.userData.dress; let face = null; const scaled = []; const evoP = {}; let evoNow = 0;
+  if (dress) {
+    face = scene.getObjectByName('penFace'); if (face) face.material = face.material.clone();
+    for (const [n, k] of Object.entries(dress.boneScale)) { const b = scene.getObjectByName(n); if (b) scaled.push([b, k, 1]); }
+    for (const [n, k] of Object.entries(dress.evoScale || {})) { const b = scene.getObjectByName(n); if (b) scaled.push([b, 1, k]); }
+    scene.traverse(n => { if (n.isSkinnedMesh) { const o = n.material; n.material = o.clone(); n.material.onBeforeCompile = o.onBeforeCompile; evoP.skin = n.material; } });
+    for (const n of ['penShell', 'penTail', 'penWingL', 'penWingR', 'penEvoTail', 'penEvoWingL', 'penEvoWingR', 'penEvoWing2L', 'penEvoWing2R']) evoP[n] = scene.getObjectByName(n);
+    evoP.fx = dress.sparks ? makeEvoFX(height || 1, 0, { auraIn: 'rgba(255,225,140,0.45)', auraOut: 'rgba(255,170,20,0.18)', spark: dress.sparks.color, bolt: dress.sparks.bolt }) : makeEvoFX(height || 1);
+  }
+  const pre = new Map();
+  const undoDress = () => scaled.forEach(([b]) => { if (pre.has(b)) b.scale.copy(pre.get(b)); });
+  const applyDress = () => scaled.forEach(([b, k, ke]) => { pre.set(b, b.scale.clone()); b.scale.multiplyScalar(k * (1 + (ke - 1) * evoNow)); });
+  scene.traverse(n => { if (n.isMesh) { n.castShadow = n.receiveShadow = true; n.frustumCulled = false; } });
+  const holder = new THREE.Group(); holder.add(scene);
+  const mixer = new THREE.AnimationMixer(scene);
+  const clips = Object.fromEntries(base.animations.map(c => [c.name, c]));
+  const OVER = ['blink', 'beak_speak'];
+  const over = {};
+  for (const k of OVER) if (clips[k]) { const c = THREE.AnimationUtils.makeClipAdditive(clips[k].clone()); over[k] = mixer.clipAction(c); over[k].blendMode = THREE.AdditiveAnimationBlendMode; over[k].play(); over[k].setEffectiveWeight(0); delete clips[k]; }
+  const actions = Object.fromEntries(Object.entries(clips).map(([k, c]) => [k, mixer.clipAction(c)]));
+  Object.values(actions).forEach(a => { a.play(); a.setEffectiveWeight(0); });
+  const first = clips['Idle'] ? 'Idle' : clips['idle'] ? 'idle' : Object.keys(clips)[0];
+  actions[first].setEffectiveWeight(1); mixer.setTime(0); applyDress(); holder.updateMatrixWorld(true);
+  const box = new THREE.Box3().setFromObject(scene, true); const hgt = box.max.y - box.min.y;
+  const c = box.getCenter(new THREE.Vector3());
+  scene.position.set(-c.x, -box.min.y, -c.z); holder.scale.setScalar((height || 1) / hgt);
+  if (evoP.fx) { holder.add(evoP.fx.group); evoP.fx.group.scale.setScalar(1 / holder.scale.x); }
+  let cur = null, prev = null, changeT = 0, startT = 0; const last = {};
+  holder.userData = {
+    clips: Object.keys(clips),
+    pose(st, t, opts = {}) {
+      if (!clips[st]) st = first;
+      // blink every ~3.5 s (offset per character), talk when opts.talk
+      if (dress) {      // evolution: opts.evo 0..1, opts.breakT = moment the eggshell explodes
+        const evo = opts.evo || 0; evoNow = evo; const broken = opts.breakT != null && t >= opts.breakT;
+        if (evoP.skin && evoP.skin.userData.sh) evoP.skin.userData.sh.uniforms.uEvo.value = evo;
+        if (evoP.penShell) evoP.penShell.visible = !broken && evo < 0.5;
+        for (const n of ['penTail', 'penWingL', 'penWingR']) if (evoP[n]) evoP[n].visible = evo < 0.5;
+        for (const n of ['penEvoTail', 'penEvoWingL', 'penEvoWingR', 'penEvoWing2L', 'penEvoWing2R']) if (evoP[n]) { evoP[n].visible = evo >= 0.5; evoP[n].scale.setScalar(Math.min(1, (evo - 0.5) * 2 + 0.05)); }
+        if (evoP.fx) evoP.fx.update(t, dress.sparks ? (opts.sparks ?? dress.sparks.level) : evo, opts.breakT);
+      }
+      if (face) { const ph = (t + (holder.id % 7) * 0.6) % 3.5; const k = opts.face || (dress && dress.defaultFace) || 'sleepy'; face.material.map = penFaceTex(k, ph < 0.13 && k !== 'sleep' && k !== 'happy' && k !== 'power' && k !== 'meanLaugh');
+        if (k === 'power') { face.material.emissive.set(0xffffff); face.material.emissiveMap = face.material.map; face.material.emissiveIntensity = 0.9; } else { face.material.emissive.set(0); face.material.emissiveMap = null; }
+        face.material.needsUpdate = true; }
+      if (over.blink && !dress) { const d = over.blink.getClip().duration, ph = (t + (holder.id % 7) * 0.6) % 3.5; over.blink.setEffectiveWeight(ph < d ? 1 : 0); over.blink.time = Math.min(ph, d); }
+      if (over.beak_speak) { const d = over.beak_speak.getClip().duration; over.beak_speak.setEffectiveWeight(opts.talk ? 1 : 0); over.beak_speak.time = t % d; }
+      if (opts.at != null) { prev = null; cur = st; changeT = t; startT = t - opts.at; }
+      else if (st !== cur) { prev = cur; cur = st; changeT = t; startT = t; }
+      const w = prev ? Math.min(1, (t - changeT) / 0.25) : 1;
+      for (const [k, a] of Object.entries(actions)) {
+        a.setEffectiveWeight(k === cur ? w : k === prev ? 1 - w : 0);
+        const d = clips[k].duration; const tt = k === cur ? t - startT : (last[k] || 0) + (t - changeT);
+        a.time = ((tt % d) + d) % d; if (k === cur) last[k] = a.time;
+      }
+      undoDress(); mixer.update(0); applyDress();
+    },
+  };
+  holder.position.set(x, 0, z); holder.rotation.y = ry; s.add(holder); chickens[id] = holder; return true;
+};
+window.vcolor = (key, tint) => { animCache[key].scene.traverse(n => { if (n.isMesh) { n.material = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.6, color: tint || 0xffffff }); } }); return true; };
+// Chickensoft shader port: vertex color R = comb, G = legs/beak, B = eyes (black); rim light on top
+window.chickenSkin = (key, body, leg, comb, hideEyes) => {
+  animCache[key].scene.traverse(n => { if (n.isSkinnedMesh) {
+    const m = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.65 });
+    m.onBeforeCompile = function (sh) {
+      this.userData.sh = sh; sh.uniforms.uEvo = { value: 0 };
+      sh.uniforms.uBody = { value: new THREE.Color(body) }; sh.uniforms.uLeg = { value: new THREE.Color(leg) }; sh.uniforms.uComb = { value: new THREE.Color(comb) };
+      sh.uniforms.uBody2 = { value: new THREE.Color(0xff9a00) }; sh.uniforms.uComb2 = { value: new THREE.Color(0xc80810) }; sh.uniforms.uLeg2 = { value: new THREE.Color(0xff6a00) };
+      sh.fragmentShader = 'uniform vec3 uBody, uLeg, uComb, uBody2, uComb2, uLeg2; uniform float uEvo;\n' + sh.fragmentShader
+        .replace('#include <color_fragment>', `vec3 vc = vColor.rgb; vec3 B = mix(uBody, uBody2, uEvo), Cm = mix(uComb, uComb2, uEvo), Lg = mix(uLeg, uLeg2, uEvo);
+          vec3 col = mix(B, Cm, vc.r); col = mix(col, Lg, vc.g); col = mix(col, ${hideEyes ? 'B' : 'vec3(0.02)'}, vc.b); diffuseColor.rgb = col;`)
+        .replace('#include <roughnessmap_fragment>', '#include <roughnessmap_fragment>\n roughnessFactor = mix(roughnessFactor, ' + (hideEyes ? '0.65' : '0.25') + ', vColor.b);')
+        .replace('#include <emissivemap_fragment>', `#include <emissivemap_fragment>
+          { float fr = pow(1.0 - clamp(dot(normalize(normal), normalize(vViewPosition)), 0.0, 1.0), 1.0);
+            float rimA = smoothstep(0.55, 0.95, fr);
+            fr = clamp(smoothstep(0.6, 0.8, fr) * normalize(vNormal).y, 0.0, 1.0); totalEmissiveRadiance += diffuseColor.rgb * fr * 0.6;
+            totalEmissiveRadiance += vec3(1.0, 0.55, 0.05) * uEvo * (0.06 + 0.9 * rimA); totalEmissiveRadiance *= (1.0 - 0.45 * uEvo * (1.0 - rimA)); }`);
+    };
+    n.material = m; } });
+  return true;
+};
+window.placeR6 = async (id, x, z, ry, height) => {
+  if (!humanBase) humanBase = (await new GLTFLoader().loadAsync('ref/menino_main.glb')).scene;
+  const h = buildR6(humanBase, { height }); h.position.set(x, 0, z); h.rotation.y = ry; s.add(h); chickens[id] = h; return true; };
+let boy2Base;
+window.placeBoy = async (id, x, z, ry, height) => {
+  if (!boy2Base) boy2Base = (await new GLTFLoader().loadAsync('ref/boy_r6_lite.glb')).scene;
+  const h = buildR6v2(boy2Base, { height }); h.position.set(x, 0, z); h.rotation.y = ry; s.add(h); chickens[id] = h; return true; };
+let kitBase = null;
+window.placeKit = async (id, x, z, ry, height, layout, look) => {
+  if (!kitBase) kitBase = (await new GLTFLoader().loadAsync('ref/pecas_lite.glb')).scene;
+  if (!boy2Base) boy2Base = (await new GLTFLoader().loadAsync('ref/boy_r6_lite.glb')).scene;
+  const h = buildKitBoy(kitBase, boy2Base, { height, layout, look }); h.position.set(x, 0, z); h.rotation.y = ry; s.add(h); chickens[id] = h; return true; };
+// Kaio (rival): same kit, blond swept hair, red hoodie, white cargo pants, smug face
+window.KAIO = { layout: { hair: 1, hairS: 1.75, hairSY: 0.55, hairDy: -0.09, hairDz: -0.02 }, look: { top: [0x5c0710, 0xe8394a], legs: [0x9a9aa2, 0xffffff], hairColor: [0x9a7330, 0xfff0b0], face: 'kaio', mouth: 'smirk' } };
+window.placeKaio = (id, x, z, ry, height) => window.placeKit(id, x, z, ry, height || 1.95, window.KAIO.layout, window.KAIO.look);
+window.buildScene = async (name) => { ground.visible = false; const a = await SC['build' + name](s); window.__anchors = a;
+  if (s.userData.exposure) r.toneMappingExposure = s.userData.exposure; if (s.userData.env != null) s.environmentIntensity = s.userData.env; if (s.userData.key != null) key.intensity = s.userData.key;
+  const bb = (o) => { const b = new THREE.Box3().setFromObject(o); return [b.min.toArray().map(v => +v.toFixed(2)), b.max.toArray().map(v => +v.toFixed(2))]; };
+  return Object.fromEntries(Object.entries(a).map(([k, v]) => [k, v && v.isObject3D ? bb(v) : v])); };
+// extras: random looks from the same kit (seeded so a shot always gets the same person)
+const NPC_TOPS = [[0x0d3a6a, 0x3a8ae8], [0x1d5a1d, 0x5acd5a], [0x6a4a00, 0xf0c040], [0x4a1d6a, 0xb06aff], [0x5c0710, 0xe8394a], [0x333333, 0x9a9a9a], [0x0a4a4a, 0x2ad0c0], [0x6a2a00, 0xff8a3a]];
+const NPC_LEGS = [[0x10141a, 0x3a4250], [0x1a2a4a, 0x4a6ab0], [0x3a2a1a, 0x9a7a50], [0x9a9aa2, 0xffffff], [0x101010, 0x404040]];
+const NPC_HAIR = [[0x2a1a10, 0x6a4a30], [0x9a7330, 0xfff0b0], [0x5a1a0a, 0xc8502a], [0x101010, 0x404040], [0x6a6a6a, 0xe0e0e0]];
+window.npc = (id, x, z, ry, seed, height) => { const R = (n) => { const v = Math.sin((seed + n) * 127.1 + 311.7) * 43758.5453; return v - Math.floor(v); };
+  const look = { top: NPC_TOPS[Math.floor(R(1) * NPC_TOPS.length)], legs: NPC_LEGS[Math.floor(R(2) * NPC_LEGS.length)], hairColor: NPC_HAIR[Math.floor(R(3) * NPC_HAIR.length)], mouth: ['smile', 'neutral', 'smile'][Math.floor(R(5) * 3)] };
+  const layout = [{ hair: 0 }, { hair: 1, hairS: 1.75, hairSY: 0.55, hairDy: -0.09, hairDz: -0.02 }, { hair: 2 }][Math.floor(R(4) * 3)];
+  return window.placeKit(id, x, z, ry, height || (1.75 + R(6) * 0.35), layout, look); };
+// Roblox-style extra from another story: the coat boy (ref/loide_fig.glb), recoloured per variant
+let LOIDE = null;
+const LOIDE_VARS = [ null, { hair: 0.0, hdark: 0.72, hdesat: 0.3, coat: 0.55, dark: 0.2 }, { hair: 0.09, hdark: -0.25, hdesat: 0.2, coat: 0.0, dark: 0.55 }, { hair: 0.0, hdark: 0.45, hdesat: 0.1, coat: 0.3, dark: 0.3 }, { hair: 0.0, hdesat: 0.95, hdark: -0.2, coat: 0.9, dark: 0.15 }, { hair: 0.7, coat: 0.75, dark: 0.1 } ];
+window.placeLoide = async (id, x, z, ry, variant = 0, height = 1.9) => {
+  if (!LOIDE) LOIDE = (await new GLTFLoader().loadAsync('ref/loide_fig.glb')).scene;
+  const m = LOIDE.clone(true), v = LOIDE_VARS[variant % LOIDE_VARS.length];
+  m.traverse(n => { if (!n.isMesh) return; n.castShadow = n.receiveShadow = true; if (!v) return;
+    const mat = n.material.clone(); mat.onBeforeCompile = (sh) => {
+      sh.vertexShader = 'varying float vLY;\n' + sh.vertexShader.replace('#include <begin_vertex>', '#include <begin_vertex>\n vLY = position.y;');
+      sh.fragmentShader = 'varying float vLY;\n' + sh.fragmentShader.replace('#include <map_fragment>', `#include <map_fragment>
+        { vec3 c0 = diffuseColor.rgb; vec3 c = pow(max(c0, vec3(0.)), vec3(1. / 2.2));
+          vec4 K = vec4(0., -1./3., 2./3., -1.); vec4 p = mix(vec4(c.bg, K.wz), vec4(c.gb, K.xy), step(c.b, c.g)); vec4 q = mix(vec4(p.xyw, c.r), vec4(c.r, p.yzx), step(p.x, c.r));
+          float d = q.x - min(q.w, q.y); float hh = abs(q.z + (q.w - q.y) / (6. * d + 1e-10)); float ss = d / (q.x + 1e-10); float vv = q.x;
+          float cloth = smoothstep(0.42, 0.5, ss) * (1. - smoothstep(0.82, 0.88, vv)) * smoothstep(0.18, 0.26, vv);
+          float isHair = cloth * smoothstep(0.515, 0.53, vLY);
+          float isCoat = cloth * (1. - isHair);
+          float sh2 = isHair * ${v.hair.toFixed(3)} + isCoat * ${v.coat.toFixed(3)}; hh = fract(hh + sh2);
+          vv *= 1. - isCoat * ${(v.dark || 0).toFixed(3)} - isHair * ${(v.hdark || 0).toFixed(3)}; ss *= 1. - isHair * ${(v.hdesat || 0).toFixed(3)};
+          vec3 rgb = clamp(abs(mod(hh * 6. + vec3(0., 4., 2.), 6.) - 3.) - 1., 0., 1.); diffuseColor.rgb = mix(c0, pow(vv * mix(vec3(1.), rgb, ss), vec3(2.2)), clamp(isHair + isCoat, 0., 1.)); }`); };
+    mat.customProgramCacheKey = () => 'loide' + variant; n.material = mat; });
+  const bb = new THREE.Box3().setFromObject(m), k = height / (bb.max.y - bb.min.y), c = bb.getCenter(new THREE.Vector3());
+  m.scale.setScalar(k); m.position.set(-c.x * k, -bb.min.y * k, -c.z * k);
+  const h = new THREE.Group(); h.add(m); h.position.set(x, 0, z); h.rotation.y = ry; h.name = id; s.add(h); return true; };
+const ACH = {};
+const POSES = {
+  point: { aR: [-1.45, 0, 0.1], eR: [-0.1, 0, 0] },
+  wave: { aR: [-0.3, 0, 2.6], eR: [0, 0, 0.5] },
+  hold: { aL: [-0.35, 0, -0.15], eL: [-0.4, 0, 0] },
+  holdR: { aR: [-0.35, 0, 0.15], eR: [-0.4, 0, 0] },
+  cheer: { aR: [-0.2, 0, 2.7], aL: [-0.2, 0, -2.7] },
+  walk: { lL: [0.4, 0, 0], lR: [-0.35, 0, 0], kR: [0.3, 0, 0], aL: [-0.35, 0, 0], aR: [0.35, 0, 0] },
+  hands: { aR: [-0.9, 0, -0.35], aL: [-0.9, 0, 0.35], eR: [-0.6, 0, 0], eL: [-0.6, 0, 0] },
+  shrug: { aR: [-0.25, 0, 0.5], aL: [-0.25, 0, -0.5], eR: [-1.2, 0, 0], eL: [-1.2, 0, 0] },
+  lookUp: { neck: [-0.45, 0, 0] },
+  pointUp: { aR: [-2.7, 0, 0.15], eR: [-0.1, 0, 0] },
+  sad: { neck: [0.35, 0, 0] },
+  laughA: { neck: [-0.25, 0, 0], aL: [-0.6, 0, -0.2], eL: [-1.0, 0, 0], aR: [-0.6, 0, 0.2], eR: [-1.0, 0, 0] },
+};
+window.placeAchados = async (id, name, x, z, ry, k = 1, pose) => {
+  if (!ACH[name]) ACH[name] = (await new GLTFLoader().loadAsync('ref/achados/' + name + '.glb')).scene;
+  const m = ACH[name].clone(true); m.traverse(n => { if (n.isMesh) { n.castShadow = n.receiveShadow = true; } });
+  for (const pz of [].concat(pose || [])) for (const [j, r] of Object.entries(POSES[pz] || {})) { const nd = m.getObjectByName('J_' + j); if (nd) nd.rotation.set(...r); }
+  m.scale.setScalar(k); const h = new THREE.Group(); h.add(m); h.position.set(x, 0, z); h.rotation.y = ry; h.name = id; s.add(h); h.updateMatrixWorld(true); const bb = new THREE.Box3().setFromObject(m); return [bb.min.y, bb.max.y]; };
+window.populate = async () => { const a = window.__anchors; if (!a) return 0; let n = 0;
+  for (const c of a.crowd || []) { const i = n++; if (typeof c[0] === 'string') await window.placeAchados('npc' + i, c[0], c[1], c[2], c[3], 1, c[4]); else await window.npc('npc' + i, c[0], c[1], c[2], i * 7 + 3); }
+  let m = 0; for (const [x, z, ry, v] of a.chickens || []) window.place('npcC' + m++, v, x, z, ry);
+  return n + m; };
+// what stands between the camera and a point? returns the names of objects hit before 90% of the way
+window.blockers = (cam3, tgt) => { const o = new THREE.Vector3(...cam3), t = new THREE.Vector3(...tgt), d = t.clone().sub(o), L = d.length(); const rc = new THREE.Raycaster(o, d.normalize(), 0.05, L * 0.9);
+  const all = []; s.traverse(n => { if (n.isMesh && !n.isSkinnedMesh) { try { rc.intersectObject(n, false, all); } catch (e) {} } }); all.sort((a, b) => a.distance - b.distance);
+  const hits = all.filter(h => h.object.visible && !h.object.isPoints && !h.object.isSprite && !(h.object.material && (h.object.material.alphaTest > 0 || h.object.material.opacity < 0.5)));
+  const top = (n) => { while (n.parent && n.parent !== s) n = n.parent; return n.name || n.type; }; return [...new Set(hits.map(h => top(h.object) + '@' + h.distance.toFixed(1)))].slice(0, 6); };
+window.THREE_Box3 = THREE.Box3;
+window.speedOf = (id, st) => chickens[id].userData.speed(st);
+window.move = (id, x, z, ry) => { const c = chickens[id]; c.position.set(x, 0, z); c.rotation.y = ry; return true; };
+
+let animBase = null;
+window.initAnimHuman = async () => {
+  animBase = await new GLTFLoader().loadAsync('ref/menino_animado.glb');
+  return true;
+};
+window.placeAnimHuman = (id, x, z, ry, height) => {
+  const scene = SkeletonUtils.clone(animBase.scene);
+  scene.traverse(n => { if (n.isMesh) { n.castShadow = n.receiveShadow = true; n.frustumCulled = false; if (n.material) { n.material = n.material.clone(); n.material.side = THREE.DoubleSide; } } });
+  const holder = new THREE.Group(); holder.add(scene);
+  const mixer = new THREE.AnimationMixer(scene);
+  const clips = Object.fromEntries(animBase.animations.map(c => [c.name, c]));
+  const actions = Object.fromEntries(Object.entries(clips).map(([k, c]) => [k, mixer.clipAction(c)]));
+  Object.values(actions).forEach(a => { a.play(); a.setEffectiveWeight(0); });
+  // measure height in idle and normalise
+  actions.idle.setEffectiveWeight(1); mixer.setTime(0); holder.updateMatrixWorld(true);
+  const box = new THREE.Box3().setFromObject(scene, true); const hgt = box.max.y - box.min.y;
+  scene.position.y = -box.min.y; holder.scale.setScalar((height || 1.95) / hgt);
+  let hips = null; scene.traverse(o => { if (!hips && o.isBone) hips = o; });
+  const off = {};
+  for (const k of Object.keys(actions)) {
+    Object.values(actions).forEach(a => a.setEffectiveWeight(0)); actions[k].setEffectiveWeight(1); actions[k].time = 0; mixer.update(0);
+    holder.updateMatrixWorld(true); const bb = new THREE.Box3().setFromObject(scene, true); const wp = bb.getCenter(new THREE.Vector3());
+    scene.worldToLocal(wp); off[k] = wp;
+  }
+  for (const k of Object.keys(off)) if (k !== 'idle') off[k] = new THREE.Vector3(off[k].x - off.idle.x, 0, off[k].z - off.idle.z);
+  off.idle = new THREE.Vector3();
+  const baseY = scene.position.y;
+  const map = { idle: 'idle', walk: 'walk', run: 'run', celebrate: 'jump', jump: 'jump', scared: 'hurt', hurt: 'hurt', point: 'idle' };
+  let cur = null, prev = null, changeT = 0, startT = 0;
+  holder.userData = {
+    speed(st) { return st === 'walk' ? 1.25 : st === 'run' ? 3.4 : 0; },
+    pose(st, t) {
+      const c = map[st] || 'idle';
+      if (c !== cur) { prev = cur; cur = c; changeT = t; startT = t; }
+      const w = prev ? Math.min(1, (t - changeT) / 0.3) : 1;
+      const last = holder.userData._last || (holder.userData._last = {});
+      for (const [k, a] of Object.entries(actions)) {
+        const wt = k === cur ? w : k === prev ? 1 - w : 0;
+        a.setEffectiveWeight(wt);
+        const d = clips[k].duration;
+        const tt = k === cur ? t - startT : (last[k] || 0) + (t - changeT);
+        a.time = ((tt % d) + d) % d;
+        if (k === cur) last[k] = a.time;
+      }
+      mixer.update(0);
+      const comp = new THREE.Vector3();
+      for (const [k, a] of Object.entries(actions)) comp.addScaledVector(off[k], a.getEffectiveWeight());
+      scene.position.set(-comp.x * scene.scale.x, baseY, -comp.z * scene.scale.z);
+    },
+  };
+  holder.position.set(x, 0, z); holder.rotation.y = ry; s.add(holder); chickens[id] = holder; return true;
+};
+window.ready = true;
+</script></body></html>
