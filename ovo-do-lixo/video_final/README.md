@@ -27,7 +27,7 @@ O **guia completo** de como o vídeo foi feito (roteiro, ganchos, estilo, som, l
 
 - `ref/achados/`: figurantes da plateia, exportados dos personagens do projeto Achados, que é **privado** (por isso não
   ficam neste repositório público). Para gerar: `node exp_achados.cjs <pasta do clone do repositório Achados>`.
-- O vídeo final está em `O_Ovo_do_Lixo_final.mp4` (720x1280; versão leve no Google Drive).
+- (O vídeo final está aqui mesmo: `O_Ovo_do_Lixo_final.mp4`, 720x1280.)
 
 ## Como renderizar
 
